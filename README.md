@@ -1,16 +1,43 @@
-# React + Vite
+# ▶️ Clicktube
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Clicktube é uma plataforma de compartilhamento de vídeos completa e moderna, construída do zero inspirada no YouTube. Ela permite aos usuários assistirem, fazerem upload, gerenciarem suas playlists e interagirem com o conteúdo, tudo com uma interface elegante e super responsiva.
 
-Currently, two official plugins are available:
+## 🚀 Tecnologias Utilizadas
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Frontend:** React, Vite, CSS Puro (variáveis, flexbox, grid)
+- **Backend:** Node.js, Express
+- **Banco de Dados:** Banco de dados JSON (ou MongoDB, configurável no backend)
 
-## React Compiler
+## ✨ Principais Funcionalidades
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Upload de Vídeos:** Envio de vídeos com extração automática da duração do arquivo de vídeo.
+- **Sistema de Autenticação:** Login e registro de usuários.
+- **Biblioteca Completa (Library):** Histórico de vídeos assistidos e gerenciamento de playlists.
+- **Dashboard Admin:** Uma área exclusiva (`/admin`) para administradores visualizarem estatísticas globais e moderarem (excluírem) vídeos de qualquer usuário.
+- **Interface Responsiva:** Design incrivelmente adaptável para Mobile, Tablet e Desktop.
+- **Modo Noturno Estiloso:** Interface focada em uma estética moderna em tons escuros e com efeitos de vidro (Glassmorphism).
 
-## Expanding the ESLint configuration
+## 🛠️ Como rodar o projeto localmente
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/ryuclover/Clicktube.git
+   ```
+
+2. **Frontend:**
+   ```bash
+   cd Clicktube
+   npm install
+   npm run dev
+   ```
+
+3. **Backend:**
+   Abra outro terminal:
+   ```bash
+   cd Clicktube/server
+   npm install
+   npm start
+   ```
+
+## 🌐 Deploy
+O frontend pode ser facilmente hospedado na **Vercel** e o backend no **Render**. Verifique o guia de deploy no repositório ou pergunte ao mantenedor.
