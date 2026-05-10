@@ -1,0 +1,132 @@
+.navbar {
+  grid-area: nav;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: var(--nav-height);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: -0.5px;
+}
+
+.logo-icon {
+  filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.4));
+}
+
+.nav-center {
+  flex: 0 1 600px;
+  margin: 0 20px;
+}
+
+.search-bar {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 40px;
+  padding: 2px 4px 2px 20px;
+  transition: all var(--transition-speed);
+}
+
+.search-bar:focus-within {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+}
+
+.search-bar input {
+  background: none;
+  border: none;
+  color: white;
+  width: 100%;
+  padding: 8px 0;
+  outline: none;
+  font-size: 0.95rem;
+}
+
+.search-btn {
+  padding: 0 16px;
+  color: var(--text-secondary);
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background var(--transition-speed);
+  color: var(--text-primary);
+}
+
+.icon-btn:hover {
+  background: var(--surface-hover);
+}
+
+.user-profile-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 8px;
+}
+
+.nav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+}
+
+.logout-btn {
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+
+.logout-btn:hover {
+  color: #ff4444;
+}
+
+.login-link-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.login-link-btn:hover {
+  background: var(--accent-color);
+  color: white;
+}
+
+.notification-wrapper {
+  position: relative;
+}

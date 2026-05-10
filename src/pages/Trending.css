@@ -1,0 +1,18 @@
+.trending-page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.trending-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 24px;
+}
+
+.trending-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+}

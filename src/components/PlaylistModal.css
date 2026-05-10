@@ -1,0 +1,99 @@
+.playlist-modal {
+  width: 100%;
+  max-width: 320px;
+  background: var(--surface-color);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.playlist-list {
+  max-height: 250px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.playlist-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.playlist-item:hover {
+  opacity: 0.8;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--text-secondary);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox.checked {
+  background: white;
+  border-color: white;
+  color: black;
+}
+
+.create-section {
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+}
+
+.add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.create-form label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.create-form input {
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--text-secondary);
+  color: white;
+  padding: 4px 0;
+  outline: none;
+}
+
+.create-btn {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  cursor: pointer;
+  align-self: flex-end;
+}

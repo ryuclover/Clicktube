@@ -1,0 +1,74 @@
+.notification-dropdown {
+  position: absolute;
+  top: 60px;
+  right: 80px;
+  width: 360px;
+  max-height: 500px;
+  background: rgba(18, 18, 18, 0.95);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.notification-content {
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 12px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+}
+
+.notification-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.notification-item.unread {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.notif-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.notif-text p {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.notif-time {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-color);
+  border-radius: 50%;
+  position: absolute;
+  right: 16px;
+}
+
+.empty-notif {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-secondary);
+}

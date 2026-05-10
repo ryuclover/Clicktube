@@ -1,0 +1,68 @@
+.subs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.subs-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--text-primary);
+}
+
+.subs-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.channels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 24px;
+}
+
+.channel-card {
+  padding: 24px;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  transition: transform 0.2s, background 0.2s;
+  cursor: pointer;
+}
+
+.channel-card:hover {
+  transform: translateY(-5px);
+  background: var(--surface-hover);
+}
+
+.channel-avatar-large {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+.channel-info h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.channel-info span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.empty-message {
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 100px;
+}

@@ -1,0 +1,135 @@
+.library-page {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.auth-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  text-align: center;
+  gap: 16px;
+}
+
+.library-login {
+  margin-top: 16px;
+  padding: 12px 32px;
+  font-size: 1.1rem;
+}
+
+.library-section {
+  margin-bottom: 40px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-title h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.see-all-link {
+  color: var(--accent-color);
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.see-all-link:hover {
+  text-decoration: underline;
+}
+
+.horizontal-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 16px;
+  padding-bottom: 16px;
+  scrollbar-width: thin;
+}
+
+.scroll-item {
+  flex: 0 0 300px;
+}
+
+.library-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 40px 0;
+}
+
+.playlists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.playlist-card {
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.playlist-thumb-placeholder {
+  aspect-ratio: 16/9;
+  background: var(--surface-hover);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+}
+
+.playlist-count {
+  background: rgba(0,0,0,0.6);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+}
+
+.playlist-card h3 {
+  padding: 12px 12px 4px;
+  font-size: 1.1rem;
+}
+
+.playlist-meta {
+  padding: 0 12px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.view-playlist-btn {
+  margin: 0 12px 12px;
+  padding: 8px;
+  text-align: center;
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.view-playlist-btn:hover {
+  background: rgba(255,255,255,0.1);
+}

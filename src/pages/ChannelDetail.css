@@ -1,0 +1,150 @@
+.channel-detail-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.channel-banner {
+  width: 100%;
+  aspect-ratio: 6 / 1;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.channel-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.channel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 24px;
+}
+
+.channel-header-content {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.channel-avatar-large {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.channel-avatar-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.channel-info-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.channel-name-large {
+  font-size: 2.25rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.channel-stats {
+  display: flex;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.channel-bio {
+  max-width: 600px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
+.channel-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.join-btn {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  padding: 10px 24px;
+  border-radius: 40px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.join-btn:hover {
+  background: var(--surface-hover);
+}
+
+.channel-tabs {
+  display: flex;
+  gap: 32px;
+  padding: 0 12px;
+}
+
+.tab {
+  padding: 12px 0;
+  font-weight: 600;
+  color: var(--text-secondary);
+  position: relative;
+}
+
+.tab.active {
+  color: var(--text-primary);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--text-primary);
+  border-radius: 3px 3px 0 0;
+}
+
+.channel-videos {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .channel-header-content {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .channel-name-large {
+    font-size: 1.5rem;
+    justify-content: center;
+  }
+  
+  .channel-stats, .channel-actions {
+    justify-content: center;
+  }
+  
+  .channel-tabs {
+    gap: 16px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
