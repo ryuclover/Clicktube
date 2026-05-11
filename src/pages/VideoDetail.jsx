@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useContext } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import axios from 'axios'
-import config from '../config'
+import { Helmet } from 'react-helmet-async'
+import toast from 'react-hot-toast'
+import api from '../api/api'
 import { ThumbsUp, ThumbsDown, Share2, Download, MoreHorizontal, CheckCircle, Send, FolderPlus } from 'lucide-react'
 import { AuthContext } from '../context/AuthContext'
-import { mockVideos } from '../utils/mockData'
 import VideoCard from '../components/VideoCard'
 import PlaylistModal from '../components/PlaylistModal'
+import CustomPlayer from '../components/CustomPlayer'
+import Skeleton from '../components/Skeleton'
 import './VideoDetail.css'
 
 const VideoDetail = () => {
@@ -18,49 +20,50 @@ const VideoDetail = () => {
   const [newComment, setNewComment] = useState('')
   const [liked, setLiked] = useState(false)
   const [disliked, setDisliked] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchVideoData = async () => {
-      if (config.mode === 'mock') {
-        setVideo(mockVideos.find(v => v.id === id) || mockVideos[0])
-        return
-      }
-
+      setLoading(true)
       try {
-        const res = await axios.get(`${config.apiUrl}/videos`)
-        const found = res.data.find(v => v.id === id) || mockVideos.find(v => v.id === id) || mockVideos[0]
-        setVideo(found)
-        
+        // Use the dedicated single-video endpoint
+        const res = await api.get(`/videos/${id}`)
+        setVideo(res.data)
+
         // Track History
         if (user) {
-          axios.post(`${config.apiUrl}/social/history`, { userId: user.id, videoId: id })
+          api.post('/social/history', { userId: user.id, videoId: id })
         }
-        
-        // Increment View
-        axios.post(`${config.apiUrl}/videos/${id}/view`)
 
-        const commentsRes = await axios.get(`${config.apiUrl}/social/comments/${id}`)
+        // Increment View
+        api.post(`/videos/${id}/view`)
+
+        const commentsRes = await api.get(`/social/comments/${id}`)
         setComments(commentsRes.data)
       } catch (err) {
-        console.error('Error fetching video data', err)
+        toast.error('Video not found or unavailable.')
+      } finally {
+        setLoading(false)
       }
     }
     fetchVideoData()
   }, [id, user])
 
   const handleLike = async (type) => {
-    if (!user) return alert('Please login to like')
+    if (!user) return toast.error('Please login to like')
     try {
-      await axios.post(`${config.apiUrl}/social/like`, { videoId: id, userId: user.id, type })
+      await api.post('/social/like', { videoId: id, userId: user.id, type })
       if (type === 'like') {
         setLiked(!liked)
         setDisliked(false)
+        toast.success(liked ? 'Like removed' : 'Video liked')
       } else {
         setDisliked(!disliked)
         setLiked(false)
+        toast.success(disliked ? 'Dislike removed' : 'Video disliked')
       }
     } catch (err) {
-      console.error(err)
+      toast.error('Action failed')
     }
   }
 
@@ -69,27 +72,28 @@ const VideoDetail = () => {
   const [showPlaylistModal, setShowPlaylistModal] = useState(false)
 
   const handleSubscribe = async () => {
-    if (!user) return alert('Please login to subscribe')
+    if (!user) return toast.error('Please login to subscribe')
     try {
-      const res = await axios.post(`${config.apiUrl}/social/subscribe`, { 
+      const res = await api.post('/social/subscribe', { 
         userId: user.id, 
         channelId: video.userId 
       })
       setSubscribed(res.data.subscribed)
+      toast.success(res.data.subscribed ? 'Subscribed!' : 'Unsubscribed')
     } catch (err) {
-      console.error(err)
+      toast.error('Action failed')
     }
   }
 
   const handleComment = async (e, parentId = null) => {
     if (e) e.preventDefault()
-    if (!user) return alert('Please login to comment')
+    if (!user) return toast.error('Please login to comment')
     
     const text = parentId ? replyingTo.text : newComment
     if (!text.trim()) return
 
     try {
-      const res = await axios.post(`${config.apiUrl}/social/comment`, {
+      const res = await api.post('/social/comment', {
         videoId: id,
         userId: user.id,
         text,
@@ -98,23 +102,61 @@ const VideoDetail = () => {
       setComments([res.data, ...comments])
       setNewComment('')
       setReplyingTo(null)
+      toast.success('Comment added')
     } catch (err) {
-      console.error(err)
+      toast.error('Failed to post comment')
     }
   }
 
-  if (!video) return <div className="loading">Loading...</div>
+  if (loading) {
+    return (
+      <div className="video-detail-container fade-in">
+        <div className="video-section">
+          <Skeleton type="video-player" />
+          <div className="video-info-section" style={{ marginTop: '20px' }}>
+            <Skeleton type="title" />
+            <div className="video-actions-bar" style={{ display: 'flex', gap: '15px' }}>
+              <Skeleton type="circle" />
+              <div style={{ flex: 1 }}>
+                <Skeleton type="text" classes="w-1/4" />
+                <Skeleton type="text" classes="w-1/6" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="related-videos-section">
+          <Skeleton type="title" />
+          {[1, 2, 3, 4].map(i => <div key={i} style={{ marginBottom: '15px' }}><Skeleton type="thumbnail" /></div>)}
+        </div>
+      </div>
+    )
+  }
+
+  if (!video) return <div className="error-msg">Video not found</div>
 
   const videoUrl = video.url ? (video.url.startsWith('http') ? video.url : `http://localhost:5000${video.url}`) : '';
 
   return (
     <div className="video-detail-container fade-in">
+      <Helmet>
+        <title>{video.title} - Clicktube</title>
+        <meta name="description" content={video.description?.substring(0, 160)} />
+        <meta property="og:title" content={video.title} />
+        <meta property="og:description" content={video.description?.substring(0, 160)} />
+        <meta property="og:image" content={video.thumbnail} />
+        <meta property="og:type" content="video.other" />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Helmet>
       <div className="video-section">
         <div className="player-wrapper">
-          {video.url && video.url.includes('youtube.com') ? (
-             <iframe src={video.url.replace('watch?v=', 'embed/')} title={video.title} frameBorder="0" allowFullScreen></iframe>
+          {video.url && (video.url.includes('youtube.com') || video.url.includes('youtu.be')) ? (
+             <iframe src={video.url.includes('watch?v=') ? video.url.replace('watch?v=', 'embed/') : video.url.replace('youtu.be/', 'youtube.com/embed/')} title={video.title} frameBorder="0" allowFullScreen></iframe>
           ) : (
-            video.url ? <video src={videoUrl} controls autoPlay className="native-player"></video> : <div className="no-video">No video available</div>
+            video.url ? (
+              <CustomPlayer src={videoUrl} thumbnail={video.thumbnail} />
+            ) : (
+              <div className="no-video">No video available</div>
+            )
           )}
         </div>
         
@@ -159,7 +201,7 @@ const VideoDetail = () => {
               <button className="action-btn"><Share2 size={18} /> Share</button>
               <button 
                 className="action-btn" 
-                onClick={() => user ? setShowPlaylistModal(true) : alert('Please login to save videos')}
+                onClick={() => user ? setShowPlaylistModal(true) : toast.error('Please login to save videos')}
               >
                 <FolderPlus size={18} /> Save
               </button>

@@ -1,50 +1,62 @@
-import React, { useState, useEffect } from 'react'
-import axios from 'axios'
-import config from '../config'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
+import api from '../api/api'
+import { CATEGORIES } from '../utils/categories'
 import VideoCard from '../components/VideoCard'
 import SkeletonCard from '../components/SkeletonCard'
-import { mockVideos } from '../utils/mockData'
 import './Home.css'
 
-const categories = ['All', 'React', 'Design', 'Music', 'Gaming', 'AI', 'Coding', 'Nature', 'Tutorials', 'Vlogs']
 
 const Home = () => {
   const [activeCategory, setActiveCategory] = useState('All')
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [sort, setSort] = useState('newest')
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+
+  const fetchVideos = useCallback(async (pageNum, isNewCategory = false) => {
+    if (pageNum === 1) setLoading(true)
+    else setLoadingMore(true)
+
+    try {
+      const res = await api.get('/videos', {
+        params: { category: activeCategory, sort, page: pageNum, limit: 12 }
+      })
+      const newVideos = res.data.videos
+      setVideos(prev => isNewCategory ? newVideos : [...prev, ...newVideos])
+      setHasMore(res.data.page < res.data.totalPages)
+    } catch (err) {
+      toast ? null : console.error('Failed to fetch videos', err)
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
+  }, [activeCategory, sort])
 
   useEffect(() => {
-    const fetchVideos = async () => {
-      setLoading(true)
-      if (config.mode === 'mock') {
-        setTimeout(() => {
-          setVideos(mockVideos)
-          setLoading(false)
-        }, 800) // Simulate delay for skeleton demo
-        return
-      }
+    setPage(1)
+    fetchVideos(1, true)
+  }, [activeCategory, sort, fetchVideos])
 
-      try {
-        const res = await axios.get(`${config.apiUrl}/videos`, {
-          params: { category: activeCategory, sort }
-        })
-        setVideos(res.data)
-      } catch (err) {
-        console.error('Failed to fetch videos', err)
-        if (config.useMockFallback) setVideos(mockVideos)
-      } finally {
-        setLoading(false)
-      }
+  const handleLoadMore = () => {
+    if (hasMore && !loadingMore) {
+      const nextPage = page + 1
+      setPage(nextPage)
+      fetchVideos(nextPage)
     }
-    fetchVideos()
-  }, [activeCategory, sort])
+  }
 
   return (
     <div className="home-page">
+      <Helmet>
+        <title>Clicktube - Share your moments</title>
+        <meta name="description" content="Discover and share amazing videos on Clicktube. The modern video platform for everyone." />
+      </Helmet>
       <div className="home-controls">
         <div className="categories-bar">
-          {categories.map((category) => (
+          {CATEGORIES.map((category) => (
             <button 
               key={category}
               className={`category-pill ${activeCategory === category ? 'active' : ''}`}
@@ -71,7 +83,16 @@ const Home = () => {
             <VideoCard key={`${video.id}-${index}`} video={video} />
           ))
         )}
+        {loadingMore && Array(4).fill(0).map((_, i) => <SkeletonCard key={i} />)}
       </div>
+
+      {hasMore && !loading && (
+        <div className="load-more-container">
+          <button className="load-more-btn" onClick={handleLoadMore} disabled={loadingMore}>
+            {loadingMore ? 'Loading...' : 'Show More'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

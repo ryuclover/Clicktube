@@ -1,0 +1,6 @@
+{
+  "name": "clicktube",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

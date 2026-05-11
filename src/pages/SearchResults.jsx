@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import axios from 'axios'
+import api from '../api/api'
 import config from '../config'
 import VideoCard from '../components/VideoCard'
 import ChannelResultCard from '../components/ChannelResultCard'
-import SkeletonCard from '../components/SkeletonCard'
+import Skeleton from '../components/Skeleton'
 import { SlidersHorizontal } from 'lucide-react'
 import './SearchResults.css'
 
@@ -19,15 +19,15 @@ const SearchResults = () => {
       setLoading(true)
       try {
         if (activeTab === 'videos') {
-          const res = await axios.get(`${config.apiUrl}/videos`, {
+          const res = await api.get('/videos', {
             params: { search: searchTerm }
           })
-          setResults(res.data)
+          setResults(res.data.videos || [])
         } else if (activeTab === 'channels') {
-          const res = await axios.get(`${config.apiUrl}/auth/search`, {
+          const res = await api.get('/auth/search', {
             params: { q: searchTerm }
           })
-          setResults(res.data)
+          setResults(res.data || [])
         }
       } catch (err) {
         console.error(err)
@@ -66,7 +66,16 @@ const SearchResults = () => {
       
       <div className="search-results-list">
         {loading ? (
-          Array(5).fill(0).map((_, i) => <div key={i} className="skeleton-search-item"><SkeletonCard /></div>)
+          Array(5).fill(0).map((_, i) => (
+            <div key={i} className="search-item-row" style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
+              <Skeleton type="thumbnail" classes="w-1/3" />
+              <div style={{ flex: 1 }}>
+                <Skeleton type="title" />
+                <Skeleton type="text" classes="w-1/2" />
+                <Skeleton type="text" classes="w-1/4" />
+              </div>
+            </div>
+          ))
         ) : (
           results.length > 0 ? (
             results.map((item, index) => (

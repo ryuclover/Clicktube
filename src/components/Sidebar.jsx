@@ -13,9 +13,9 @@ const categories = [
   { name: 'Studio', icon: <Video size={20} />, path: '/studio' },
   { name: 'Liked Videos', icon: <ThumbsUp size={20} />, path: '/liked' },
   { type: 'divider', label: 'Explore' },
-  { name: 'Music', icon: <Music2 size={20} />, path: '/music' },
-  { name: 'Gaming', icon: <Gamepad2 size={20} />, path: '/gaming' },
-  { name: 'Sports', icon: <Trophy size={20} />, path: '/sports' },
+  { name: 'Music', icon: <Music2 size={20} />, path: '/category/Music' },
+  { name: 'Gaming', icon: <Gamepad2 size={20} />, path: '/category/Gaming' },
+  { name: 'Sports', icon: <Trophy size={20} />, path: '/category/Sports' },
 ]
 
 const Sidebar = () => {
@@ -30,8 +30,8 @@ const Sidebar = () => {
               {item.label && <span className="divider-label">{item.label}</span>}
             </div>
           ) : (
-            <Link 
-              key={item.name} 
+            <Link
+              key={item.name}
               to={item.path}
               className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
             >
@@ -42,7 +42,7 @@ const Sidebar = () => {
         ))}
       </div>
       <div className="sidebar-footer">
-        <p>© 2024 Clicktube</p>
+        <p>© 2026 Clicktube</p>
       </div>
     </aside>
   )

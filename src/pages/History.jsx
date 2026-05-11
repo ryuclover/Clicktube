@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react'
-import axios from 'axios'
+import api from '../api/api'
 import config from '../config'
 import { AuthContext } from '../context/AuthContext'
 import VideoCard from '../components/VideoCard'
@@ -15,7 +15,7 @@ const History = () => {
       const fetchHistory = async () => {
         if (config.mode === 'mock') return
         try {
-          const res = await axios.get(`${config.apiUrl}/social/history/${user.id}`)
+          const res = await api.get(`/social/history/${user.id}`)
           setHistory(res.data)
         } catch (err) {
           console.error(err)

@@ -16,6 +16,18 @@
   --transition-speed: 0.3s;
 }
 
+[data-theme='light'] {
+  --bg-color: #f9f9f9;
+  --surface-color: #ffffff;
+  --surface-hover: #f1f1f1;
+  --glass-color: rgba(255, 255, 255, 0.8);
+  --primary-color: #111111;
+  --accent-color: #2563eb;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-color: rgba(0, 0, 0, 0.08);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -94,4 +106,26 @@ button {
   padding: 24px;
   overflow-y: auto;
   height: calc(100vh - var(--nav-height));
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    grid-template-areas: 
+      "nav"
+      "main";
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .main-content {
+    padding: 12px;
+    padding-bottom: 80px; /* Space for bottom nav */
+  }
+
+  .hide-mobile {
+    display: none !important;
+  }
 }

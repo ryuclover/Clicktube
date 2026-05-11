@@ -56,3 +56,21 @@
   color: var(--accent-color);
   font-weight: 600;
 }
+
+.auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-form input:disabled {
+  opacity: 0.6;
+}
+
+.auth-btn .spin {
+  animation: spinAnim 0.8s linear infinite;
+}
+
+@keyframes spinAnim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

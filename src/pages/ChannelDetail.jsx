@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import axios from 'axios'
-import config from '../config'
+import api from '../api/api'
 import { CheckCircle, Users, Video } from 'lucide-react'
-import { mockVideos } from '../utils/mockData'
 import VideoCard from '../components/VideoCard'
-import SkeletonCard from '../components/SkeletonCard'
+import Skeleton from '../components/Skeleton'
 import './ChannelDetail.css'
 
 const ChannelDetail = () => {
@@ -19,14 +17,14 @@ const ChannelDetail = () => {
       setLoading(true)
       try {
         // Fetch Profile
-        const profileRes = await axios.get(`${config.apiUrl}/social/profile/${id}`)
+        const profileRes = await api.get(`/social/profile/${id}`)
         setChannel(profileRes.data)
 
         // Fetch Videos
-        const videosRes = await axios.get(`${config.apiUrl}/videos`, {
+        const videosRes = await api.get('/videos', {
           params: { userId: id }
         })
-        setVideos(videosRes.data)
+        setVideos(videosRes.data.videos || [])
       } catch (err) {
         console.error('Error fetching channel data', err)
       } finally {
@@ -36,7 +34,23 @@ const ChannelDetail = () => {
     fetchChannelData()
   }, [id])
 
-  if (loading) return <div className="loading-state">Loading channel...</div>
+  if (loading) {
+    return (
+      <div className="channel-detail-page fade-in">
+        <Skeleton type="thumbnail" classes="banner-skeleton" />
+        <div className="channel-header" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', gap: '20px' }}>
+            <Skeleton type="circle" classes="avatar-skeleton" />
+            <div style={{ flex: 1 }}>
+              <Skeleton type="title" />
+              <Skeleton type="text" classes="w-1/4" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (!channel) return <div className="error-state">Channel not found</div>
 
   return (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react'
-import axios from 'axios'
+import toast from 'react-hot-toast'
+import api from '../api/api'
 import config from '../config'
 import { AuthContext } from '../context/AuthContext'
 import { Edit2, Trash2, Eye, MessageSquare, ThumbsUp, Globe, Lock, FileText } from 'lucide-react'
@@ -17,10 +18,10 @@ const Studio = () => {
     if (user) {
       const fetchMyVideos = async () => {
         try {
-          const res = await axios.get(`${config.apiUrl}/videos`, {
+          const res = await api.get('/videos', {
             params: { userId: user.id }
           })
-          setVideos(res.data)
+          setVideos(res.data.videos || [])
         } catch (err) {
           console.error(err)
         } finally {
@@ -33,13 +34,15 @@ const Studio = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this video?')) return
+    const loadingToast = toast.loading('Deleting video...')
     try {
-      await axios.delete(`${config.apiUrl}/videos/${id}`, {
+      await api.delete(`/videos/${id}`, {
         params: { userId: user.id }
       })
       setVideos(videos.filter(v => v.id !== id))
+      toast.success('Video deleted successfully', { id: loadingToast })
     } catch (err) {
-      alert('Failed to delete video')
+      toast.error('Failed to delete video', { id: loadingToast })
     }
   }
 
@@ -117,6 +120,7 @@ const Studio = () => {
           onClose={() => setEditingVideo(null)}
           onUpdate={(updated) => {
             setVideos(videos.map(v => v.id === updated.id ? updated : v))
+            toast.success('Video updated successfully')
           }}
         />
       )}

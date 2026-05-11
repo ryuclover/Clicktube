@@ -1,0 +1,6 @@
+# Server-specific gitignore
+.env
+node_modules/
+logs/
+*.log
+uploads/

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../api/api'
 import config from '../config'
 import VideoCard from '../components/VideoCard'
 import SkeletonCard from '../components/SkeletonCard'
@@ -13,10 +13,10 @@ const Trending = () => {
   useEffect(() => {
     const fetchTrending = async () => {
       try {
-        const res = await axios.get(`${config.apiUrl}/videos`, {
+        const res = await api.get('/videos', {
           params: { sort: 'views' } // Sort by views for trending
         })
-        setVideos(res.data)
+        setVideos(res.data.videos || [])
       } catch (err) {
         console.error(err)
       } finally {

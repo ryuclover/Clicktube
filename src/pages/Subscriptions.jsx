@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react'
-import axios from 'axios'
+import api from '../api/api'
 import config from '../config'
 import { AuthContext } from '../context/AuthContext'
 import { Users, CheckCircle } from 'lucide-react'
@@ -15,7 +15,7 @@ const Subscriptions = () => {
       const fetchSubs = async () => {
         if (config.mode === 'mock') return
         try {
-          const res = await axios.get(`${config.apiUrl}/social/subscriptions/${user.id}`)
+          const res = await api.get(`/social/subscriptions/${user.id}`)
           setChannels(res.data)
         } catch (err) {
           console.error(err)

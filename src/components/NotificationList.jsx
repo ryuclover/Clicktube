@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
-import config from '../config'
+import api from '../api/api'
 import { Link } from 'react-router-dom'
 import './NotificationList.css'
 
 const NotificationList = ({ userId, onClose }) => {
   const [notifications, setNotifications] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchNotifications = async () => {
+      setLoading(true)
       try {
-        const res = await axios.get(`${config.apiUrl}/social/notifications/${userId}`)
+        const res = await api.get(`/social/notifications/${userId}`)
         setNotifications(res.data)
       } catch (err) {
         console.error(err)
+      } finally {
+        setLoading(false)
       }
     }
     fetchNotifications()
@@ -21,7 +24,7 @@ const NotificationList = ({ userId, onClose }) => {
 
   const markAsRead = async (id) => {
     try {
-      await axios.put(`${config.apiUrl}/social/notifications/${id}/read`)
+      await api.put(`/social/notifications/${id}/read`)
       setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n))
     } catch (err) {
       console.error(err)
@@ -34,7 +37,9 @@ const NotificationList = ({ userId, onClose }) => {
         <h3>Notifications</h3>
       </div>
       <div className="notification-content">
-        {notifications.length > 0 ? (
+        {loading ? (
+          <p className="empty-notif">Loading...</p>
+        ) : notifications.length > 0 ? (
           notifications.map(n => (
             <div 
               key={n.id} 
@@ -44,7 +49,9 @@ const NotificationList = ({ userId, onClose }) => {
               <img src={n.fromUser.avatar} alt="avatar" className="notif-avatar" />
               <div className="notif-text">
                 <p><strong>{n.fromUser.username}</strong> {n.message}</p>
-                <span className="notif-time">{new Date(n.createdAt).toLocaleDateString()}</span>
+                <span className="notif-time">
+                  {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Just now'}
+                </span>
               </div>
               {!n.read && <div className="unread-dot"></div>}
             </div>

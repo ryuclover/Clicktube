@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react'
-import axios from 'axios'
+import api from '../api/api'
 import config from '../config'
 import { AuthContext } from '../context/AuthContext'
 import VideoCard from '../components/VideoCard'
@@ -19,8 +19,8 @@ const Library = () => {
       const fetchLibraryData = async () => {
         try {
           const [historyRes, playlistsRes] = await Promise.all([
-            axios.get(`${config.apiUrl}/social/history/${user.id}`),
-            axios.get(`${config.apiUrl}/social/playlists/${user.id}`)
+            api.get(`/social/history/${user.id}`),
+            api.get(`/social/playlists/${user.id}`)
           ])
           setHistory(historyRes.data.slice(0, 8)) // Only show recent 8
           setPlaylists(playlistsRes.data)

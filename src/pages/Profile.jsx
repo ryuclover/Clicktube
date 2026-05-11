@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react'
-import axios from 'axios'
+import toast from 'react-hot-toast'
+import api from '../api/api'
 import config from '../config'
 import { AuthContext } from '../context/AuthContext'
 import { User, Edit2, Save, History as HistoryIcon } from 'lucide-react'
@@ -18,7 +19,7 @@ const Profile = () => {
       const fetchProfile = async () => {
         if (config.mode === 'mock') return
         try {
-          const res = await axios.get(`${config.apiUrl}/social/profile/${user.id}`)
+          const res = await api.get(`/social/profile/${user.id}`)
           setProfile(res.data)
           setUsername(res.data.username)
           setBio(res.data.bio || '')
@@ -32,13 +33,15 @@ const Profile = () => {
   }, [user])
 
   const handleSave = async () => {
+    const loadingToast = toast.loading('Updating profile...')
     try {
-      const res = await axios.put(`${config.apiUrl}/social/profile/${user.id}`, { username, bio, banner })
+      const res = await api.put(`/social/profile/${user.id}`, { username, bio, banner })
       setProfile(res.data)
       login(res.data, localStorage.getItem('token')) // Update global user state
       setIsEditing(false)
+      toast.success('Profile updated!', { id: loadingToast })
     } catch (err) {
-      alert('Failed to update profile')
+      toast.error('Update failed', { id: loadingToast })
     }
   }
 

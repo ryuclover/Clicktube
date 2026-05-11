@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react'
-import axios from 'axios'
+import toast from 'react-hot-toast'
+import api from '../api/api'
 import config from '../config'
 import { AuthContext } from '../context/AuthContext'
 import { Trash2, ShieldAlert } from 'lucide-react'
@@ -11,19 +12,18 @@ const Admin = () => {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Very basic admin check (in a real app this would be a secure backend check)
-  const isAdmin = user && (user.email === 'test@user' || user.email === 'admin@clicktube.com')
+  const isAdmin = user && (user.role === 'admin' || user.email === 'test@user' || user.email === 'admin@clicktube.com')
 
   useEffect(() => {
     if (isAdmin) {
       const fetchAdminData = async () => {
         try {
           const [videosRes, usersRes] = await Promise.all([
-            axios.get(`${config.apiUrl}/videos`),
-            axios.get(`${config.apiUrl}/auth/search?q=`) // Empty query returns all in our simple implementation, or just a new route
+            api.get('/videos', { params: { limit: 100 } }),
+            api.get('/auth/search?q=')
           ])
-          setVideos(videosRes.data)
-          setUsers(usersRes.data)
+          setVideos(videosRes.data.videos || [])
+          setUsers(usersRes.data || [])
         } catch (err) {
           console.error(err)
         } finally {
@@ -38,18 +38,15 @@ const Admin = () => {
 
   const handleDeleteVideo = async (id) => {
     if (!window.confirm('Delete this video globally?')) return
+    const loadingToast = toast.loading('Deleting video...')
     try {
-      // In our simple backend, the delete route checks if userId matches. 
-      // We would need to pass an admin flag or use a dedicated admin route.
-      // For demonstration, we'll assume the backend allows it for now if we pass the owner's ID (or bypass it).
-      // Let's modify the backend delete route to accept an admin flag for simplicity.
-      const video = videos.find(v => v.id === id);
-      await axios.delete(`${config.apiUrl}/videos/${id}`, {
-        params: { userId: video.userId, adminOverride: true } 
+      await api.delete(`/videos/${id}`, {
+        params: { userId: user.id } 
       })
       setVideos(videos.filter(v => v.id !== id))
+      toast.success('Video removed globally', { id: loadingToast })
     } catch (err) {
-      alert('Failed to delete video')
+      toast.error('Moderation action failed', { id: loadingToast })
     }
   }
 
