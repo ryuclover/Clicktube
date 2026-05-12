@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from 'react'
-import { Search, Bell, Video, User, Menu, Play, LogOut, Upload, Sun, Moon } from 'lucide-react'
+import { Search, Bell, Video, User, Menu, Play, LogOut, Upload, Sun, Moon, Shield } from 'lucide-react'
 import { useNavigate, Link } from 'react-router-dom'
 import api from '../api/api'
 import { AuthContext } from '../context/AuthContext'
@@ -109,6 +109,11 @@ const Navbar = () => {
         </button>
         {user ? (
           <>
+            {user.role === 'admin' && (
+              <Link to="/admin" className="icon-btn admin-link" title="Admin Panel">
+                <Shield size={20} color="#ff4444" />
+              </Link>
+            )}
             <Link to="/upload" className="icon-btn hide-mobile" title="Upload Video">
               <Upload size={20} />
             </Link>

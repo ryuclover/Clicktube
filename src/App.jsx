@@ -40,6 +40,7 @@ function App() {
             <Route path="/video/:id" element={<VideoDetail />} />
             <Route path="/search/:searchTerm" element={<SearchResults />} />
             <Route path="/category/:categoryName" element={<CategoryResults />} />
+            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/channel/:id" element={<ChannelDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
