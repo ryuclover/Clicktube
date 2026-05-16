@@ -18,7 +18,7 @@ const parseStoredUser = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(parseStoredUser);
+  const [user, setUser] = useState(() => parseStoredUser());
   const [token, setToken] = useState(getStoredToken);
 
   useEffect(() => {
