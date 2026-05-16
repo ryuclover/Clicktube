@@ -7,7 +7,7 @@ import { User, Edit2, Save, History as HistoryIcon } from 'lucide-react'
 import './Profile.css'
 
 const Profile = () => {
-  const { user, login } = useContext(AuthContext)
+  const { user, token, login } = useContext(AuthContext)
   const [profile, setProfile] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [username, setUsername] = useState('')
@@ -37,7 +37,7 @@ const Profile = () => {
     try {
       const res = await api.put(`/social/profile/${user.id}`, { username, bio, banner })
       setProfile(res.data)
-      login(res.data, localStorage.getItem('token')) // Update global user state
+      login(res.data, token) // Update global user state
       setIsEditing(false)
       toast.success('Profile updated!', { id: loadingToast })
     } catch (err) {

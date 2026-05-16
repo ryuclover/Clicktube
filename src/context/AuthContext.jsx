@@ -2,14 +2,20 @@ import React, { createContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
+const TOKEN_KEY = 'token';
+const USER_KEY = 'user';
+
+const getStoredToken = () => sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(getStoredToken());
 
   useEffect(() => {
     if (token) {
-      // For now, we just trust the token, but we could fetch profile
-      const storedUser = localStorage.getItem('user');
+      sessionStorage.setItem(TOKEN_KEY, token);
+      localStorage.removeItem(TOKEN_KEY);
+      const storedUser = localStorage.getItem(USER_KEY);
       if (storedUser) setUser(JSON.parse(storedUser));
     }
   }, [token]);
@@ -17,15 +23,17 @@ export const AuthProvider = ({ children }) => {
   const login = (userData, userToken) => {
     setUser(userData);
     setToken(userToken);
-    localStorage.setItem('token', userToken);
-    localStorage.setItem('user', JSON.stringify(userData));
+    sessionStorage.setItem(TOKEN_KEY, userToken);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.setItem(USER_KEY, JSON.stringify(userData));
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   };
 
   return (
