@@ -42,7 +42,7 @@ This project underwent a comprehensive technical audit and modernization, includ
 2. **Backend Configuration:**
    - Go to `server/` directory.
    - Rename `.env.example` to `.env`.
-   - Fill in your MongoDB URI, Cloudinary keys, and JWT Secret.
+   - Fill in your MongoDB URI, Cloudinary keys, and JWT Secret (use a long random value, e.g. `openssl rand -hex 32`).
    ```bash
    npm install
    npm start

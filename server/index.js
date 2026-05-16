@@ -18,7 +18,7 @@ const PORT = env.PORT || 5000;
 
 // Security Middlewares
 app.use(helmet()); // Set security HTTP headers
-// app.use(mongoSanitize()); // Removed due to incompatibility with Express 5
+app.use(mongoSanitize()); // Sanitize request data against MongoDB operator injection
 app.use(compression()); // Compress all responses
 
 // Rate Limiting
