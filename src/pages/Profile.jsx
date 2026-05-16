@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import toast from 'react-hot-toast'
 import api from '../api/api'
 import config from '../config'
 import { AuthContext } from '../context/AuthContext'
-import { User, Edit2, Save, History as HistoryIcon } from 'lucide-react'
+import { Edit2, Save } from 'lucide-react'
 import './Profile.css'
 
 const Profile = () => {
@@ -40,7 +40,7 @@ const Profile = () => {
       login(res.data, token) // Update global user state
       setIsEditing(false)
       toast.success('Profile updated!', { id: loadingToast })
-    } catch (err) {
+    } catch {
       toast.error('Update failed', { id: loadingToast })
     }
   }

@@ -28,6 +28,7 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       // Token expired or invalid — clear session and redirect to login
       sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
