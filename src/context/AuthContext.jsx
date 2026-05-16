@@ -22,12 +22,16 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(getStoredToken);
 
   useEffect(() => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  }, []);
+
+  useEffect(() => {
     if (token) {
       sessionStorage.setItem(TOKEN_KEY, token);
     } else {
       sessionStorage.removeItem(TOKEN_KEY);
     }
-    localStorage.removeItem(TOKEN_KEY);
   }, [token]);
 
   useEffect(() => {
@@ -36,7 +40,6 @@ export const AuthProvider = ({ children }) => {
     } else {
       sessionStorage.removeItem(USER_KEY);
     }
-    localStorage.removeItem(USER_KEY);
   }, [user]);
 
   const login = (userData, userToken) => {
