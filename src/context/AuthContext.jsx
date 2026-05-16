@@ -4,9 +4,21 @@ export const AuthContext = createContext();
 
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
+const MIGRATION_KEY = 'auth_storage_migrated_v1';
 
-const getStoredToken = () => sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
-const getStoredUser = () => sessionStorage.getItem(USER_KEY) || localStorage.getItem(USER_KEY);
+const getStoredToken = () => {
+  const sessionToken = sessionStorage.getItem(TOKEN_KEY);
+  if (sessionToken) return sessionToken;
+  if (sessionStorage.getItem(MIGRATION_KEY) === '1') return null;
+  return localStorage.getItem(TOKEN_KEY);
+};
+
+const getStoredUser = () => {
+  const sessionUser = sessionStorage.getItem(USER_KEY);
+  if (sessionUser) return sessionUser;
+  if (sessionStorage.getItem(MIGRATION_KEY) === '1') return null;
+  return localStorage.getItem(USER_KEY);
+};
 const parseStoredUser = () => {
   const storedUser = getStoredUser();
   if (!storedUser) return null;
@@ -22,8 +34,21 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(getStoredToken);
 
   useEffect(() => {
+    if (sessionStorage.getItem(MIGRATION_KEY) === '1') return;
+
+    if (!sessionStorage.getItem(TOKEN_KEY)) {
+      const legacyToken = localStorage.getItem(TOKEN_KEY);
+      if (legacyToken) sessionStorage.setItem(TOKEN_KEY, legacyToken);
+    }
+
+    if (!sessionStorage.getItem(USER_KEY)) {
+      const legacyUser = localStorage.getItem(USER_KEY);
+      if (legacyUser) sessionStorage.setItem(USER_KEY, legacyUser);
+    }
+
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    sessionStorage.setItem(MIGRATION_KEY, '1');
   }, []);
 
   useEffect(() => {
