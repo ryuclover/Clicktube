@@ -85,7 +85,9 @@ const Upload = () => {
       toast.success('Video published successfully!', { id: loadingToast })
       navigate('/')
     } catch (err) {
-      toast.error('Upload failed. Please try again.', { id: loadingToast })
+      console.error("Frontend upload catch error:", err.response?.data || err)
+      const errorMsg = err.response?.data?.message || 'Upload failed. Please try again.'
+      toast.error(errorMsg, { id: loadingToast })
     } finally {
       setUploading(false)
       setUploadProgress(0)

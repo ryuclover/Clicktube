@@ -213,8 +213,8 @@ router.post('/upload', uploadCloud.fields([{ name: 'video', maxCount: 1 }, { nam
 
     res.status(201).json(videoObj);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error during video upload:", error);
+    res.status(500).json({ message: error.message || 'Server error' });
   }
 });
 
