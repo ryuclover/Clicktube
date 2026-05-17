@@ -13,7 +13,6 @@ const storage = new CloudinaryStorage({
   params: {
     folder: 'clicktube',
     resource_type: 'auto', // Required for video uploads
-    allowed_formats: ['jpg', 'png', 'jpeg', 'mp4', 'mov', 'avi', 'mkv']
   }
 });
 

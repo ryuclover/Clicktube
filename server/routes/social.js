@@ -230,8 +230,17 @@ router.get('/profile/:userId', async (req, res) => {
   try {
     const user = await User.findOne({ id: req.params.userId });
     if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    // Dynamically calculate subscribers and video count
+    const subscribers = await Subscription.countDocuments({ channelId: req.params.userId });
+    const videosCount = await Video.countDocuments({ uploaderId: req.params.userId });
+    
     const { password, ...safeUser } = user.toObject();
-    res.json(safeUser);
+    res.json({
+      ...safeUser,
+      subscribers,
+      videosCount
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -258,7 +267,16 @@ router.put('/profile/:userId', async (req, res) => {
     );
     
     if (!updatedUser) return res.status(404).json({ message: 'User not found' });
-    res.json(updatedUser);
+    
+    const subscribers = await Subscription.countDocuments({ channelId: userId });
+    const videosCount = await Video.countDocuments({ uploaderId: userId });
+    const { password, ...safeUser } = updatedUser.toObject();
+    
+    res.json({
+      ...safeUser,
+      subscribers,
+      videosCount
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -285,6 +303,35 @@ router.get('/playlists/:userId', async (req, res) => {
   try {
     const userPlaylists = await Playlist.find({ userId: req.params.userId });
     res.json(userPlaylists);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.get('/playlists/detail/:id', async (req, res) => {
+  try {
+    const playlist = await Playlist.findOne({ id: req.params.id }).lean();
+    if (!playlist) return res.status(404).json({ message: 'Playlist not found' });
+    
+    let videos = await Video.find({ id: { $in: playlist.videoIds } }).lean();
+    
+    videos = await Promise.all(videos.map(async (v) => {
+      const uploader = await User.findOne({ id: v.uploaderId });
+      return {
+        ...v,
+        userId: v.uploaderId,
+        channel: uploader ? uploader.username : 'Unknown',
+        channelAvatar: uploader ? uploader.avatar : 'https://i.pravatar.cc/150',
+        viewsCount: v.views,
+        views: `${v.views} views`,
+        timestamp: v.createdAt ? new Date(v.createdAt).toLocaleDateString() : 'Just now',
+      };
+    }));
+
+    res.json({
+      ...playlist,
+      videos
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

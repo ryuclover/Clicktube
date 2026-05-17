@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import toast from 'react-hot-toast'
 import api from '../api/api'
+import config from '../config'
 import { ThumbsUp, ThumbsDown, Share2, Download, MoreHorizontal, CheckCircle, Send, FolderPlus } from 'lucide-react'
 import { AuthContext } from '../context/AuthContext'
 import VideoCard from '../components/VideoCard'
@@ -21,6 +22,9 @@ const VideoDetail = () => {
   const [liked, setLiked] = useState(false)
   const [disliked, setDisliked] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [subscribed, setSubscribed] = useState(false)
+  const [relatedVideos, setRelatedVideos] = useState([])
+  const [uploaderSubscribers, setUploaderSubscribers] = useState(0)
 
   useEffect(() => {
     const fetchVideoData = async () => {
@@ -29,6 +33,35 @@ const VideoDetail = () => {
         // Use the dedicated single-video endpoint
         const res = await api.get(`/videos/${id}`)
         setVideo(res.data)
+
+        // Fetch uploader profile to get subscribers count
+        try {
+          const profileRes = await api.get(`/social/profile/${res.data.userId}`)
+          setUploaderSubscribers(profileRes.data.subscribers || 0)
+        } catch (profileErr) {
+          console.error('Error fetching uploader profile', profileErr)
+        }
+
+        // Fetch related videos by category
+        try {
+          const relatedRes = await api.get('/videos', {
+            params: { category: res.data.category, limit: 7 }
+          })
+          setRelatedVideos((relatedRes.data.videos || []).filter(v => v.id !== id))
+        } catch (relatedErr) {
+          console.error('Error fetching related videos', relatedErr)
+        }
+
+        // Check if current user is subscribed
+        if (user) {
+          try {
+            const subsRes = await api.get(`/social/subscriptions/${user.id}`)
+            const isSub = subsRes.data.some(sub => sub.id === res.data.userId)
+            setSubscribed(isSub)
+          } catch (subsErr) {
+            console.error('Error checking subscription', subsErr)
+          }
+        }
 
         // Track History
         if (user) {
@@ -68,7 +101,6 @@ const VideoDetail = () => {
   }
 
   const [replyingTo, setReplyingTo] = useState(null)
-  const [subscribed, setSubscribed] = useState(false)
   const [showPlaylistModal, setShowPlaylistModal] = useState(false)
 
   const handleSubscribe = async () => {
@@ -79,6 +111,7 @@ const VideoDetail = () => {
         channelId: video.userId 
       })
       setSubscribed(res.data.subscribed)
+      setUploaderSubscribers(prev => res.data.subscribed ? prev + 1 : Math.max(0, prev - 1))
       toast.success(res.data.subscribed ? 'Subscribed!' : 'Unsubscribed')
     } catch (err) {
       toast.error('Action failed')
@@ -134,7 +167,8 @@ const VideoDetail = () => {
 
   if (!video) return <div className="error-msg">Video not found</div>
 
-  const videoUrl = video.url ? (video.url.startsWith('http') ? video.url : `http://localhost:5000${video.url}`) : '';
+  const backendBaseUrl = config.apiUrl.replace('/api', '')
+  const videoUrl = video.url ? (video.url.startsWith('http') ? video.url : `${backendBaseUrl}${video.url}`) : ''
 
   return (
     <div className="video-detail-container fade-in">
@@ -172,7 +206,7 @@ const VideoDetail = () => {
                 <Link to={`/channel/${video.userId}`} className="channel-name">
                   {video.channel} <CheckCircle size={14} fill="#a1a1aa" color="var(--bg-color)" />
                 </Link>
-                <span className="sub-count">1.2M subscribers</span>
+                <span className="sub-count">{uploaderSubscribers} subscribers</span>
               </div>
               <button 
                 className={`subscribe-btn ${subscribed ? 'subscribed' : ''}`}
@@ -295,9 +329,13 @@ const VideoDetail = () => {
       <div className="related-videos-section">
         <h3>Related Videos</h3>
         <div className="related-grid">
-          {mockVideos.map((v, index) => (
-            <VideoCard key={`${v.id}-related-${index}`} video={v} />
-          ))}
+          {relatedVideos.length > 0 ? (
+            relatedVideos.map((v, index) => (
+              <VideoCard key={`${v.id}-related-${index}`} video={v} />
+            ))
+          ) : (
+            <p className="empty-message">No related videos found.</p>
+          )}
         </div>
       </div>
       

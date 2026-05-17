@@ -10,7 +10,7 @@ import './Upload.css'
 const Upload = () => {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('All')
+  const [category, setCategory] = useState(CATEGORIES.find(c => c !== 'All') || 'React')
   const [videoFile, setVideoFile] = useState(null)
   const [thumbnailFile, setThumbnailFile] = useState(null)
   const [videoPreview, setVideoPreview] = useState(null)

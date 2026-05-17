@@ -12,6 +12,14 @@ const CustomPlayer = ({ src, thumbnail }) => {
   const playerRef = useRef(null)
   const controlsTimeout = useRef(null)
 
+  useEffect(() => {
+    setIsPlaying(false)
+    setProgress(0)
+    if (videoRef.current) {
+      videoRef.current.load()
+    }
+  }, [src])
+
   const togglePlay = () => {
     if (videoRef.current.paused) {
       videoRef.current.play()
@@ -61,6 +69,18 @@ const CustomPlayer = ({ src, thumbnail }) => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Ignore keyboard shortcuts if the user is typing in an input, textarea or contenteditable element
+      const activeEl = document.activeElement
+      if (
+        activeEl && (
+          activeEl.tagName === 'INPUT' || 
+          activeEl.tagName === 'TEXTAREA' || 
+          activeEl.isContentEditable
+        )
+      ) {
+        return
+      }
+
       if (e.code === 'Space') {
         e.preventDefault()
         togglePlay()

@@ -20,6 +20,7 @@ import Subscriptions from './pages/Subscriptions'
 import Studio from './pages/Studio'
 import Trending from './pages/Trending'
 import Library from './pages/Library'
+import PlaylistDetail from './pages/PlaylistDetail'
 import Admin from './pages/Admin'
 import NotFound from './pages/NotFound'
 import './App.css'
@@ -40,7 +41,6 @@ function App() {
             <Route path="/video/:id" element={<VideoDetail />} />
             <Route path="/search/:searchTerm" element={<SearchResults />} />
             <Route path="/category/:categoryName" element={<CategoryResults />} />
-            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/channel/:id" element={<ChannelDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -50,6 +50,7 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
             <Route path="/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
+            <Route path="/playlist/:id" element={<ProtectedRoute><PlaylistDetail /></ProtectedRoute>} />
             <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
             <Route path="/studio" element={<ProtectedRoute><Studio /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />

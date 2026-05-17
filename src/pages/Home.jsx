@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Helmet } from 'react-helmet-async'
+import toast from 'react-hot-toast'
 import api from '../api/api'
 import { CATEGORIES } from '../utils/categories'
 import VideoCard from '../components/VideoCard'
@@ -28,7 +29,8 @@ const Home = () => {
       setVideos(prev => isNewCategory ? newVideos : [...prev, ...newVideos])
       setHasMore(res.data.page < res.data.totalPages)
     } catch (err) {
-      toast ? null : console.error('Failed to fetch videos', err)
+      toast.error('Failed to load videos')
+      console.error('Failed to fetch videos', err)
     } finally {
       setLoading(false)
       setLoadingMore(false)

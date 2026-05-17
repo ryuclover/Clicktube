@@ -91,7 +91,27 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Increment views
+/**
+ * @route   GET /api/videos/suggestions
+ * @desc    Get search suggestions based on partial title
+ * @access  Public
+ * @query   {string} q - The partial title to search for
+ */
+router.get('/suggestions', async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.json([]);
+    
+    const videos = await Video.find({
+      title: { $regex: q, $options: 'i' }
+    }).limit(10).select('title');
+    
+    res.json(videos.map(v => v.title));
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 /**
  * @route   GET /api/videos/:id
  * @desc    Get a single video by its ID
@@ -101,8 +121,6 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    // Exclude 'suggestions' and other named routes from hitting this
-    if (id === 'suggestions') return res.status(400).json({ message: 'Invalid route' });
 
     const video = await Video.findOne({ id }).lean();
     if (!video) return res.status(404).json({ message: 'Video not found' });
@@ -136,27 +154,6 @@ router.post('/:id/view', async (req, res) => {
     }
     
     res.status(404).json({ message: 'Video not found' });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-/**
- * @route   GET /api/videos/suggestions
- * @desc    Get search suggestions based on partial title
- * @access  Public
- * @query   {string} q - The partial title to search for
- */
-router.get('/suggestions', async (req, res) => {
-  try {
-    const { q } = req.query;
-    if (!q) return res.json([]);
-    
-    const videos = await Video.find({
-      title: { $regex: q, $options: 'i' }
-    }).limit(10).select('title');
-    
-    res.json(videos.map(v => v.title));
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
