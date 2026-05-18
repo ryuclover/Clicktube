@@ -98,18 +98,21 @@ router.get('/comments/:videoId', async (req, res) => {
  */
 router.post('/like', async (req, res) => {
   try {
-    const { videoId, userId, type } = req.body; 
+    const { videoId, userId, type } = req.body;
+
+    // BUG #3 FIX: Check existing interaction before deciding action
+    const existing = await Like.findOne({ videoId, userId });
+
+    if (existing && existing.type === type) {
+      // Same type clicked again → toggle OFF (remove the like/dislike)
+      await Like.findOneAndDelete({ videoId, userId });
+      return res.json({ success: true, action: 'removed' });
+    }
+
+    // Different type or no existing interaction → replace/insert
     await Like.findOneAndDelete({ videoId, userId });
-    
-    const newLike = new Like({
-      id: uuidv4(),
-      videoId,
-      userId,
-      type
-    });
-    
-    await newLike.save();
-    res.json({ success: true });
+    await new Like({ videoId, userId, type }).save();
+    res.json({ success: true, action: 'added' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -151,6 +154,10 @@ router.post('/subscribe', async (req, res) => {
       res.json({ success: true, subscribed: true });
     }
   } catch (error) {
+    // BUG #4 FIX: Handle race-condition duplicate key error gracefully
+    if (error.code === 11000) {
+      return res.status(409).json({ message: 'Already subscribed' });
+    }
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -191,15 +198,16 @@ router.get('/history/:userId', async (req, res) => {
 router.post('/history', async (req, res) => {
   try {
     const { userId, videoId } = req.body;
-    await History.findOneAndDelete({ userId, videoId });
-    
-    const newHistory = new History({
-      userId,
-      videoId,
-      watchedAt: new Date()
-    });
-    
-    await newHistory.save();
+
+    // BUG #14 FIX: Use atomic upsert instead of delete+insert.
+    // Prevents data loss if the server crashes between the two operations
+    // and avoids E11000 duplicate key errors under concurrent requests.
+    await History.findOneAndUpdate(
+      { userId, videoId },
+      { watchedAt: new Date() },
+      { upsert: true, new: true }
+    );
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

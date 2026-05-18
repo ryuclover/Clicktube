@@ -26,15 +26,15 @@ const VideoDetail = () => {
   const [relatedVideos, setRelatedVideos] = useState([])
   const [uploaderSubscribers, setUploaderSubscribers] = useState(0)
 
+  // Effect 1: Fetch video data, related videos, comments + increment view.
+  // BUG #12 FIX: Depends only on [id] — view is NOT re-counted when user logs in/out.
   useEffect(() => {
     const fetchVideoData = async () => {
       setLoading(true)
       try {
-        // Use the dedicated single-video endpoint
         const res = await api.get(`/videos/${id}`)
         setVideo(res.data)
 
-        // Fetch uploader profile to get subscribers count
         try {
           const profileRes = await api.get(`/social/profile/${res.data.userId}`)
           setUploaderSubscribers(profileRes.data.subscribers || 0)
@@ -42,7 +42,6 @@ const VideoDetail = () => {
           console.error('Error fetching uploader profile', profileErr)
         }
 
-        // Fetch related videos by category
         try {
           const relatedRes = await api.get('/videos', {
             params: { category: res.data.category, limit: 7 }
@@ -52,23 +51,6 @@ const VideoDetail = () => {
           console.error('Error fetching related videos', relatedErr)
         }
 
-        // Check if current user is subscribed
-        if (user) {
-          try {
-            const subsRes = await api.get(`/social/subscriptions/${user.id}`)
-            const isSub = subsRes.data.some(sub => sub.id === res.data.userId)
-            setSubscribed(isSub)
-          } catch (subsErr) {
-            console.error('Error checking subscription', subsErr)
-          }
-        }
-
-        // Track History
-        if (user) {
-          api.post('/social/history', { userId: user.id, videoId: id })
-        }
-
-        // Increment View
         api.post(`/videos/${id}/view`)
 
         const commentsRes = await api.get(`/social/comments/${id}`)
@@ -80,7 +62,21 @@ const VideoDetail = () => {
       }
     }
     fetchVideoData()
+  }, [id])
+
+  // Effect 2: Track watch history. Backend now uses upsert so safe to re-run.
+  useEffect(() => {
+    if (!user) return
+    api.post('/social/history', { userId: user.id, videoId: id })
   }, [id, user])
+
+  // Effect 3: Check subscription when video owner or logged-in user changes.
+  useEffect(() => {
+    if (!user || !video) return
+    api.get(`/social/subscriptions/${user.id}`)
+      .then(res => setSubscribed(res.data.some(sub => sub.id === video.userId)))
+      .catch(err => console.error('Error checking subscription', err))
+  }, [video?.userId, user])
 
   const handleLike = async (type) => {
     if (!user) return toast.error('Please login to like')

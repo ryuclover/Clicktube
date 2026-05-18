@@ -10,9 +10,11 @@ cloudinary.config({
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'clicktube',
-    resource_type: 'auto', // Required for video uploads
+  params: async (req, file) => {
+    return {
+      folder: 'clicktube',
+      resource_type: 'auto',
+    };
   }
 });
 

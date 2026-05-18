@@ -34,6 +34,7 @@ app.use(cors({
   origin: [
     env.FRONTEND_URL,
     'https://clicktube-wine.vercel.app',
+    'https://clicktubeapp.vercel.app',
     'http://localhost:5173',
     'http://localhost:3000'
   ].filter(Boolean),
