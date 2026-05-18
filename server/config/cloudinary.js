@@ -17,7 +17,6 @@ const storage = new CloudinaryStorage({
     return {
       folder: 'clicktube',
       resource_type: isVideo ? 'video' : 'image',
-      allowed_formats: isVideo ? ['mp4', 'mkv', 'webm'] : ['jpg', 'jpeg', 'png', 'webp'],
     };
   }
 });
