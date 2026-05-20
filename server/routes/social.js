@@ -9,6 +9,7 @@ const Subscription = require('../models/Subscription');
 const History = require('../models/History');
 const Playlist = require('../models/Playlist');
 const { requireAuth } = require('../middleware/auth');
+const { getAvatarUrl, formatDateBR } = require('../utils/display');
 
 const router = express.Router();
 
@@ -22,7 +23,7 @@ const createNotification = async ({ userId, type, fromUser, videoId, message }) 
       fromUser: {
         id: fromUser.id,
         username: fromUser.username,
-        avatar: fromUser.profilePicture || fromUser.avatar
+        avatar: getAvatarUrl(fromUser)
       },
       videoId: videoId || null,
       message
@@ -54,10 +55,9 @@ router.post('/comment', async (req, res) => {
       videoId,
       userId,
       username: user ? user.username : 'User',
-      avatar: user ? (user.profilePicture || user.avatar) : '',
+      avatar: getAvatarUrl(user),
       text,
-      parentId: parentId || null,
-      timestamp: 'Just now'
+      parentId: parentId || null
     });
 
     await newComment.save();
@@ -73,7 +73,11 @@ router.post('/comment', async (req, res) => {
       });
     }
 
-    res.json(newComment);
+    res.json({
+      ...newComment.toObject(),
+      avatar: getAvatarUrl(newComment.avatar),
+      timestamp: formatDateBR(newComment.createdAt)
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -81,8 +85,12 @@ router.post('/comment', async (req, res) => {
 
 router.get('/comments/:videoId', async (req, res) => {
   try {
-    const comments = await Comment.find({ videoId: req.params.videoId }).sort({ createdAt: -1 });
-    res.json(comments);
+    const comments = await Comment.find({ videoId: req.params.videoId }).sort({ createdAt: -1 }).lean();
+    res.json(comments.map((comment) => ({
+      ...comment,
+      avatar: getAvatarUrl(comment.avatar),
+      timestamp: formatDateBR(comment.createdAt)
+    })));
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -117,7 +125,6 @@ router.post('/like', async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
-      const { requireAuth } = require('../middleware/auth');
 });
 
 // Subscriptions
@@ -176,7 +183,7 @@ router.get('/subscriptions/:userId', async (req, res) => {
     const userSubs = await Subscription.find({ userId: req.params.userId });
     const subscribedChannels = await Promise.all(userSubs.map(async (sub) => {
       const channel = await User.findOne({ id: sub.channelId });
-      return channel ? { id: channel.id, username: channel.username, avatar: channel.profilePicture || channel.avatar } : null;
+      return channel ? { id: channel.id, username: channel.username, avatar: getAvatarUrl(channel) } : null;
     }));
     res.json(subscribedChannels.filter(Boolean));
   } catch (error) {
@@ -244,7 +251,8 @@ router.get('/profile/:userId', async (req, res) => {
     const { password, ...safeUser } = user.toObject();
     res.json({
       ...safeUser,
-      avatar: safeUser.profilePicture || safeUser.avatar,
+      avatar: getAvatarUrl(safeUser),
+      profilePicture: safeUser.profilePicture || getAvatarUrl(safeUser),
       subscribers,
       videosCount
     });
@@ -281,7 +289,8 @@ router.put('/profile/:userId', async (req, res) => {
     
     res.json({
       ...safeUser,
-      avatar: safeUser.profilePicture || safeUser.avatar,
+      avatar: getAvatarUrl(safeUser),
+      profilePicture: safeUser.profilePicture || getAvatarUrl(safeUser),
       subscribers,
       videosCount
     });
@@ -329,7 +338,7 @@ router.get('/playlists/detail/:id', async (req, res) => {
         ...v,
         userId: v.uploaderId,
         channel: uploader ? uploader.username : 'Unknown',
-        channelAvatar: uploader ? (uploader.profilePicture || uploader.avatar) : 'https://i.pravatar.cc/150',
+        channelAvatar: getAvatarUrl(uploader),
         viewsCount: v.views,
         views: `${v.views} views`,
         timestamp: formatDateBR(v.createdAt),

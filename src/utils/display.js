@@ -5,8 +5,8 @@ export const getAvatarUrl = (value) => {
 };
 
 export const formatDateBR = (value) => {
-  if (!value) return 'Just now';
+  if (!value) return 'Agora mesmo';
   const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Just now';
+  if (Number.isNaN(date.getTime())) return 'Agora mesmo';
   return date.toLocaleDateString('pt-BR');
 };

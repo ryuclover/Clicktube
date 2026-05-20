@@ -5,6 +5,8 @@ const { v4: uuidv4 } = require('uuid');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const uploadAvatar = require('../middleware/uploadAvatar');
+const { requireAuth } = require('../middleware/auth');
+const { getAvatarUrl, DEFAULT_AVATAR } = require('../utils/display');
 const env = require('../config/env');
 
 const router = express.Router();
@@ -46,14 +48,14 @@ router.post('/register', [
       username,
       email,
       password: hashedPassword,
-      avatar: `https://i.pravatar.cc/150?u=${username}`,
-      profilePicture: `https://i.pravatar.cc/150?u=${username}`
+      avatar: DEFAULT_AVATAR,
+      profilePicture: DEFAULT_AVATAR
     });
 
     await user.save();
 
     const token = jwt.sign({ id: user.id, role: user.role }, env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, username, email, avatar: user.avatar, profilePicture: user.profilePicture, role: user.role } });
+    res.json({ token, user: { id: user.id, username, email, avatar: getAvatarUrl(user), profilePicture: user.profilePicture || getAvatarUrl(user), role: user.role } });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -81,7 +83,7 @@ router.post('/login', [
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user.id, role: user.role }, env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, username: user.username, email: user.email, avatar: user.avatar, profilePicture: user.profilePicture, role: user.role } });
+    res.json({ token, user: { id: user.id, username: user.username, email: user.email, avatar: getAvatarUrl(user), profilePicture: user.profilePicture || getAvatarUrl(user), role: user.role } });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -100,9 +102,13 @@ router.get('/search', async (req, res) => {
 
     const users = await User.find({
       username: { $regex: q, $options: 'i' }
-    }).select('id username avatar bio subscribers -_id');
-    
-    res.json(users);
+    }).select('id username avatar profilePicture bio subscribers -_id').lean();
+
+    res.json(users.map((channel) => ({
+      ...channel,
+      avatar: getAvatarUrl(channel),
+      profilePicture: channel.profilePicture || getAvatarUrl(channel)
+    })));
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -115,13 +121,9 @@ router.get('/search', async (req, res) => {
  * @body    {file} profilePicture - Image file
  * @body    {string} userId - User ID
  */
-router.post('/upload-avatar', uploadAvatar.single('profilePicture'), async (req, res) => {
+router.post('/upload-avatar', requireAuth, uploadAvatar.single('profilePicture'), async (req, res) => {
   try {
-    const { userId } = req.body;
-    
-    if (!userId) {
-      return res.status(400).json({ message: 'User ID is required' });
-    }
+    const userId = req.user.id;
 
     const user = await User.findOne({ id: userId });
     if (!user) {
@@ -141,8 +143,8 @@ router.post('/upload-avatar', uploadAvatar.single('profilePicture'), async (req,
 
     res.json({ 
       message: 'Avatar uploaded successfully', 
-      avatar: user.profilePicture,
-      user: { id: user.id, username: user.username, avatar: user.profilePicture, profilePicture: user.profilePicture }
+      avatar: getAvatarUrl(user),
+      user: { id: user.id, username: user.username, avatar: getAvatarUrl(user), profilePicture: user.profilePicture || getAvatarUrl(user) }
     });
   } catch (error) {
     console.error('Avatar upload error:', error);

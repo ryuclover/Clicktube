@@ -6,13 +6,9 @@ const Like = require('../models/Like');
 const Comment = require('../models/Comment');
 const { uploadCloud } = require('../config/cloudinary');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
+const { getAvatarUrl, formatDateBR } = require('../utils/display');
 
 const router = express.Router();
-
-const formatDateBR = (value) => {
-  if (!value) return 'Just now';
-  return new Date(value).toLocaleDateString('pt-BR');
-};
 
 const buildRandomThumbnail = (videoUrl, duration) => {
   if (!videoUrl || !videoUrl.includes('/upload/')) {
@@ -101,7 +97,7 @@ router.get('/', optionalAuth, async (req, res) => {
         ...v,
         userId: v.uploaderId,
         channel: uploader ? uploader.username : 'Unknown',
-        channelAvatar: uploader ? (uploader.profilePicture || uploader.avatar) : 'https://i.pravatar.cc/150',
+        channelAvatar: getAvatarUrl(uploader),
         viewsCount: v.views,
         views: `${v.views} views`,
         timestamp: formatDateBR(v.createdAt),
@@ -186,10 +182,10 @@ router.post(
         ...newVideo.toObject(),
         userId: newVideo.uploaderId,
         channel: user ? user.username : 'Unknown',
-        channelAvatar: user ? (user.profilePicture || user.avatar) : 'https://i.pravatar.cc/150',
+        channelAvatar: getAvatarUrl(user),
         viewsCount: 0,
         views: '0 views',
-        timestamp: 'Just now',
+        timestamp: formatDateBR(newVideo.createdAt),
         likes: 0
       };
 
@@ -207,7 +203,7 @@ router.post(
       let errorMsg = error.message || 'Server error';
       if (error.message?.includes('CLOUDINARY')) {
         errorMsg = `Cloudinary error: ${error.message}. Check API credentials.`;
-      } else if (!videoFile) {
+      } else if (!req.files?.video?.[0]) {
         errorMsg = 'Video file is required';
       }
       
@@ -233,7 +229,7 @@ router.get('/:id', async (req, res) => {
       ...video,
       userId: video.uploaderId,
       channel: uploader ? uploader.username : 'Unknown',
-      channelAvatar: uploader ? (uploader.profilePicture || uploader.avatar) : 'https://i.pravatar.cc/150',
+      channelAvatar: getAvatarUrl(uploader),
       viewsCount: video.views,
       views: `${video.views} views`,
       timestamp: formatDateBR(video.createdAt),
@@ -352,7 +348,7 @@ router.put('/:id', requireAuth, uploadCloud.single('thumbnail'), async (req, res
       ...video.toObject(),
       userId: video.uploaderId,
       channel: uploader ? uploader.username : 'Unknown',
-      channelAvatar: uploader ? (uploader.profilePicture || uploader.avatar) : 'https://i.pravatar.cc/150',
+      channelAvatar: getAvatarUrl(uploader),
       viewsCount: video.views,
       views: `${video.views} views`,
       timestamp: formatDateBR(video.createdAt)

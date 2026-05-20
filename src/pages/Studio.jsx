@@ -6,6 +6,7 @@ import { AuthContext } from '../context/AuthContext'
 import { Edit2, Trash2, Eye, MessageSquare, ThumbsUp, Globe, Lock, FileText } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import EditVideoModal from '../components/EditVideoModal'
+import { formatDateBR } from '../utils/display'
 import './Studio.css'
 
 const Studio = () => {
@@ -87,7 +88,7 @@ const Studio = () => {
                     {video.status === 'private' && <><Lock size={14} /> Private</>}
                     {video.status === 'draft' && <><FileText size={14} /> Draft</>}
                   </td>
-                  <td>{new Date(video.createdAt || Date.now()).toLocaleDateString()}</td>
+                  <td>{formatDateBR(video.createdAt)}</td>
                   <td>{video.viewsCount || 0}</td>
                   <td>0</td>
                   <td>{video.likes || 0}</td>
