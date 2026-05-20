@@ -11,6 +11,7 @@ import PlaylistModal from '../components/PlaylistModal'
 import EditVideoModal from '../components/EditVideoModal'
 import CustomPlayer from '../components/CustomPlayer'
 import Skeleton from '../components/Skeleton'
+import { getAvatarUrl } from '../utils/display'
 import './VideoDetail.css'
 
 const VideoDetail = () => {
@@ -245,11 +246,7 @@ const VideoDetail = () => {
           <div className="video-actions-bar">
             <div className="channel-info">
               <Link to={`/channel/${video.userId}`} className="channel-avatar">
-                <img 
-                  src={video.channelAvatar || '/assets/default-avatar.svg'} 
-                  alt={video.channel}
-                  onError={(e) => { e.target.src = '/assets/default-avatar.svg' }}
-                />
+                <img src={getAvatarUrl(video.channelAvatar)} alt={video.channel} onError={(e) => { e.target.src = '/assets/default-avatar.svg' }} />
               </Link>
               <div className="channel-text">
                 <Link to={`/channel/${video.userId}`} className="channel-name">
@@ -340,7 +337,7 @@ const VideoDetail = () => {
             <h3>{comments.length} Comments</h3>
             
             <form className="comment-input-area" onSubmit={handleComment}>
-              <img src={user?.avatar || 'https://i.pravatar.cc/150'} alt="me" className="comment-avatar" />
+              <img src={getAvatarUrl(user)} alt="me" className="comment-avatar" />
               <div className="input-wrapper">
                 <input 
                   type="text" 
@@ -356,7 +353,7 @@ const VideoDetail = () => {
               {comments.filter(c => !c.parentId).map(comment => (
                 <div key={comment.id} className="comment-group">
                   <div className="comment-item">
-                    <img src={comment.avatar} alt={comment.username} className="comment-avatar" />
+                    <img src={getAvatarUrl(comment.avatar)} alt={comment.username} className="comment-avatar" />
                     <div className="comment-content">
                       <div className="comment-header">
                         <span className="comment-author">{comment.username}</span>
@@ -391,7 +388,7 @@ const VideoDetail = () => {
                   <div className="replies-container">
                     {comments.filter(c => c.parentId === comment.id).map(reply => (
                       <div key={reply.id} className="comment-item reply-item">
-                        <img src={reply.avatar} alt={reply.username} className="comment-avatar small" />
+                        <img src={getAvatarUrl(reply.avatar)} alt={reply.username} className="comment-avatar small" />
                         <div className="comment-content">
                           <div className="comment-header">
                             <span className="comment-author">{reply.username}</span>

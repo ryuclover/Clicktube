@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle } from 'lucide-react'
 import { formatViews } from '../utils/format'
+import { getAvatarUrl } from '../utils/display'
 import './VideoCard.css'
 
 const VideoCard = ({ video, layout = 'vertical' }) => {
@@ -13,11 +14,7 @@ const VideoCard = ({ video, layout = 'vertical' }) => {
       </Link>
       <div className="video-info">
         <Link to={`/channel/${video.userId}`} className="channel-avatar">
-          <img 
-            src={video.channelAvatar || '/assets/default-avatar.svg'} 
-            alt={video.channel}
-            onError={(e) => { e.target.src = '/assets/default-avatar.svg' }}
-          />
+          <img src={getAvatarUrl(video.channelAvatar)} alt={video.channel} onError={(e) => { e.target.src = '/assets/default-avatar.svg' }} />
         </Link>
         <div className="text-info">
           <Link to={`/video/${video.id}`}>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { CheckCircle } from 'lucide-react'
 import { useContext } from 'react'
 import { AuthContext } from '../context/AuthContext'
+import { getAvatarUrl } from '../utils/display'
 import { formatSubscribers } from '../utils/format'
 import './ChannelResultCard.css'
 
@@ -12,11 +13,7 @@ const ChannelResultCard = ({ channel }) => {
   return (
     <div className="channel-result-card fade-in">
       <Link to={`/channel/${channel.id}`} className="channel-result-avatar">
-        <img 
-          src={channel.avatar || '/assets/default-avatar.svg'} 
-          alt={channel.username}
-          onError={(e) => { e.target.src = '/assets/default-avatar.svg' }}
-        />
+        <img src={getAvatarUrl(channel.avatar)} alt={channel.username} onError={(e) => { e.target.src = '/assets/default-avatar.svg' }} />
       </Link>
       <div className="channel-result-info">
         <Link to={`/channel/${channel.id}`}>

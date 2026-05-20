@@ -4,6 +4,7 @@ import api, { uploadAvatar } from '../api/api'
 import config from '../config'
 import { AuthContext } from '../context/AuthContext'
 import { Edit2, Save, Upload } from 'lucide-react'
+import { getAvatarUrl } from '../utils/display'
 import './Profile.css'
 
 const Profile = () => {
@@ -27,7 +28,7 @@ const Profile = () => {
           setUsername(res.data.username)
           setBio(res.data.bio || '')
           setBanner(res.data.banner || '')
-          setAvatar(res.data.profilePicture || res.data.avatar)
+          setAvatar(getAvatarUrl(res.data))
         } catch (err) {
           console.error(err)
         }
@@ -57,7 +58,7 @@ const Profile = () => {
       const result = await uploadAvatar(file, user.id)
       setAvatar(result.avatar)
       setProfile({ ...profile, profilePicture: result.avatar })
-      login({ ...user, avatar: result.avatar }, token)
+      login({ ...user, avatar: result.avatar, profilePicture: result.avatar }, token)
       toast.success('Avatar updated!')
     } catch (error) {
       toast.error(error.response?.data?.message || 'Upload failed')
@@ -89,7 +90,7 @@ const Profile = () => {
         <div className="profile-header">
           <div className="avatar-container">
             <img 
-              src={avatar || '/assets/default-avatar.svg'} 
+              src={getAvatarUrl(avatar)} 
               alt={profile.username} 
               className="profile-avatar-large"
               onError={(e) => { e.target.src = '/assets/default-avatar.svg' }}

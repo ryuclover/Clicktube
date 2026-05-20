@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import api from '../api/api'
 import { CheckCircle, Users, Video } from 'lucide-react'
 import { AuthContext } from '../context/AuthContext'
+import { getAvatarUrl } from '../utils/display'
 import VideoCard from '../components/VideoCard'
 import Skeleton from '../components/Skeleton'
 import './ChannelDetail.css'
@@ -64,7 +65,7 @@ const ChannelDetail = () => {
       <div className="channel-header">
         <div className="channel-header-content">
           <div className="channel-avatar-large">
-            <img src={channel.avatar || '/assets/default-avatar.svg'} alt={channel.username} onError={(e) => { e.target.src = '/assets/default-avatar.svg' }} />
+            <img src={getAvatarUrl(channel.avatar)} alt={channel.username} onError={(e) => { e.target.src = '/assets/default-avatar.svg' }} />
           </div>
           <div className="channel-info-main">
             <h1 className="channel-name-large">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import api from '../api/api'
 import { Link } from 'react-router-dom'
+import { getAvatarUrl, formatDateBR } from '../utils/display'
 import './NotificationList.css'
 
 const NotificationList = ({ userId, onClose }) => {
@@ -46,11 +47,11 @@ const NotificationList = ({ userId, onClose }) => {
               className={`notification-item ${n.read ? 'read' : 'unread'}`}
               onClick={() => markAsRead(n.id)}
             >
-              <img src={n.fromUser.avatar} alt="avatar" className="notif-avatar" />
+              <img src={getAvatarUrl(n.fromUser)} alt="avatar" className="notif-avatar" />
               <div className="notif-text">
                 <p><strong>{n.fromUser.username}</strong> {n.message}</p>
                 <span className="notif-time">
-                  {n.createdAt ? new Date(n.createdAt).toLocaleDateString() : 'Just now'}
+                  {formatDateBR(n.createdAt)}
                 </span>
               </div>
               {!n.read && <div className="unread-dot"></div>}
