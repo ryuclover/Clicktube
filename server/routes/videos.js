@@ -175,8 +175,23 @@ router.post(
 
       res.status(201).json(videoObj);
     } catch (error) {
-      console.error('Error during video upload:', error);
-      res.status(500).json({ message: error.message || 'Server error' });
+      console.error('Error during video upload:', {
+        message: error.message,
+        code: error.code,
+        statusCode: error.statusCode,
+        stack: error.stack,
+        files: req.files ? Object.keys(req.files) : 'none'
+      });
+      
+      // Provide more detailed error messages for debugging
+      let errorMsg = error.message || 'Server error';
+      if (error.message?.includes('CLOUDINARY')) {
+        errorMsg = `Cloudinary error: ${error.message}. Check API credentials.`;
+      } else if (!videoFile) {
+        errorMsg = 'Video file is required';
+      }
+      
+      res.status(500).json({ message: errorMsg, details: process.env.NODE_ENV === 'development' ? error.message : undefined });
     }
   }
 );

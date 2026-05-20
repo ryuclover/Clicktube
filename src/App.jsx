@@ -22,6 +22,7 @@ import Trending from './pages/Trending'
 import Library from './pages/Library'
 import PlaylistDetail from './pages/PlaylistDetail'
 import Admin from './pages/Admin'
+import Diagnostics from './pages/Diagnostics'
 import NotFound from './pages/NotFound'
 import './App.css'
 
@@ -44,6 +45,7 @@ function App() {
             <Route path="/channel/:id" element={<ChannelDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/diagnostics" element={<Diagnostics />} />
 
             {/* Protected routes */}
             <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />

@@ -11,12 +11,9 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
-    // Dynamically set resource_type to prevent signature mismatches (Invalid Signature)
-    // for videos vs. images
-    const isVideo = file.mimetype.startsWith('video') || file.fieldname === 'video';
     return {
       folder: 'clicktube',
-      resource_type: isVideo ? 'video' : 'image',
+      resource_type: 'auto',
     };
   }
 });
