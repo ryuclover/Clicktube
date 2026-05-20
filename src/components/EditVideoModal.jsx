@@ -37,6 +37,9 @@ const EditVideoModal = ({ video, onClose, onUpdate, userId }) => {
 
   const handleSave = async (e) => {
     e.preventDefault()
+    const confirmed = window.confirm('Save these changes to the video?')
+    if (!confirmed) return
+
     setSaving(true)
     try {
       const formData = new FormData()

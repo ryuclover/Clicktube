@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useContext, useRef } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import toast from 'react-hot-toast'
 import api from '../api/api'
 import config from '../config'
-import { ThumbsUp, ThumbsDown, Share2, Download, MoreHorizontal, CheckCircle, Send, FolderPlus } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Share2, Download, MoreHorizontal, CheckCircle, Send, FolderPlus, Trash2 } from 'lucide-react'
 import { AuthContext } from '../context/AuthContext'
 import VideoCard from '../components/VideoCard'
 import PlaylistModal from '../components/PlaylistModal'
@@ -15,6 +15,7 @@ import './VideoDetail.css'
 
 const VideoDetail = () => {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { user } = useContext(AuthContext)
   
   const [video, setVideo] = useState(null)
@@ -128,6 +129,37 @@ const VideoDetail = () => {
       toast.success(res.data.subscribed ? 'Subscribed!' : 'Unsubscribed')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Action failed')
+    }
+  }
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      toast.success('Link copied to clipboard')
+    } catch {
+      toast.error('Could not copy the link')
+    }
+  }
+
+  const handleDeleteVideo = async () => {
+    if (!user || user.id !== video.userId) return
+    const confirmed = window.confirm('Delete this video permanently? This cannot be undone.')
+    if (!confirmed) return
+
+    try {
+      await api.delete(`/videos/${video.id}`)
+      toast.success('Video deleted')
+      navigate('/')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete video')
+    }
+  }
+
+  const handleOpenEdit = () => {
+    if (!user || user.id !== video.userId) return
+    const confirmed = window.confirm('Open the edit panel for this video?')
+    if (confirmed) {
+      setShowEditModal(true)
     }
   }
 
@@ -270,16 +302,21 @@ const VideoDetail = () => {
 
                 {showVideoMenu && (
                   <div className="more-actions-menu glass fade-in">
-                    <button type="button" onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('Link copied'); setShowVideoMenu(false) }}>
+                    <button type="button" onClick={() => { handleCopyLink(); setShowVideoMenu(false) }}>
                       Copy link
                     </button>
                     <button type="button" onClick={() => { user ? setShowPlaylistModal(true) : toast.error('Please login to save videos'); setShowVideoMenu(false) }}>
                       Save to playlist
                     </button>
                     {user?.id === video.userId && (
-                      <button type="button" onClick={() => { setShowEditModal(true); setShowVideoMenu(false) }}>
+                      <>
+                        <button type="button" onClick={() => { handleOpenEdit(); setShowVideoMenu(false) }}>
                         Edit
-                      </button>
+                        </button>
+                        <button type="button" className="danger" onClick={() => { handleDeleteVideo(); setShowVideoMenu(false) }}>
+                          <Trash2 size={14} /> Delete video
+                        </button>
+                      </>
                     )}
                     <button type="button" onClick={() => { toast('Report sent'); setShowVideoMenu(false) }}>
                       Report
