@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react'
+import React, { useState, useEffect, useContext, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import toast from 'react-hot-toast'
@@ -8,6 +8,7 @@ import { ThumbsUp, ThumbsDown, Share2, Download, MoreHorizontal, CheckCircle, Se
 import { AuthContext } from '../context/AuthContext'
 import VideoCard from '../components/VideoCard'
 import PlaylistModal from '../components/PlaylistModal'
+import EditVideoModal from '../components/EditVideoModal'
 import CustomPlayer from '../components/CustomPlayer'
 import Skeleton from '../components/Skeleton'
 import './VideoDetail.css'
@@ -25,6 +26,9 @@ const VideoDetail = () => {
   const [subscribed, setSubscribed] = useState(false)
   const [relatedVideos, setRelatedVideos] = useState([])
   const [uploaderSubscribers, setUploaderSubscribers] = useState(0)
+  const [showVideoMenu, setShowVideoMenu] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const menuRef = useRef(null)
 
   // Effect 1: Fetch video data, related videos, comments + increment view.
   // BUG #12 FIX: Depends only on [id] — view is NOT re-counted when user logs in/out.
@@ -102,6 +106,17 @@ const VideoDetail = () => {
 
   const [replyingTo, setReplyingTo] = useState(null)
   const [showPlaylistModal, setShowPlaylistModal] = useState(false)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowVideoMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleSubscribe = async () => {
     if (!user) return toast.error('Please login to subscribe')
@@ -243,7 +258,35 @@ const VideoDetail = () => {
                 <FolderPlus size={18} /> Save
               </button>
               <button className="action-btn hide-tablet"><Download size={18} /> Download</button>
-              <button className="action-btn"><MoreHorizontal size={18} /></button>
+              <div className="more-actions-wrapper" ref={menuRef}>
+                <button
+                  type="button"
+                  className="action-btn more-actions-btn"
+                  onClick={() => setShowVideoMenu((prev) => !prev)}
+                  aria-label="More options"
+                >
+                  <MoreHorizontal size={18} />
+                </button>
+
+                {showVideoMenu && (
+                  <div className="more-actions-menu glass fade-in">
+                    <button type="button" onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('Link copied'); setShowVideoMenu(false) }}>
+                      Copy link
+                    </button>
+                    <button type="button" onClick={() => { user ? setShowPlaylistModal(true) : toast.error('Please login to save videos'); setShowVideoMenu(false) }}>
+                      Save to playlist
+                    </button>
+                    {user?.id === video.userId && (
+                      <button type="button" onClick={() => { setShowEditModal(true); setShowVideoMenu(false) }}>
+                        Edit
+                      </button>
+                    )}
+                    <button type="button" onClick={() => { toast('Report sent'); setShowVideoMenu(false) }}>
+                      Report
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
@@ -342,11 +385,23 @@ const VideoDetail = () => {
         </div>
       </div>
       
-      {showPlaylistModal && (
+      {showPlaylistModal && user && (
         <PlaylistModal 
           videoId={id} 
           userId={user.id} 
           onClose={() => setShowPlaylistModal(false)} 
+        />
+      )}
+
+      {showEditModal && user?.id === video.userId && (
+        <EditVideoModal
+          video={video}
+          userId={user.id}
+          onClose={() => setShowEditModal(false)}
+          onUpdate={(updatedVideo) => {
+            setVideo((prev) => ({ ...prev, ...updatedVideo }))
+            setRelatedVideos((prev) => prev.map((item) => (item.id === updatedVideo.id ? { ...item, ...updatedVideo } : item)))
+          }}
         />
       )}
     </div>

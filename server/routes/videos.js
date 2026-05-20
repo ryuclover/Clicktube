@@ -326,7 +326,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
  * BUG #6 FIX: userId now extracted from verified JWT (req.user.id),
  * not from an untrusted request body.
  */
-router.put('/:id', requireAuth, async (req, res) => {
+router.put('/:id', requireAuth, uploadCloud.single('thumbnail'), async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, category, status } = req.body;
@@ -343,9 +343,20 @@ router.put('/:id', requireAuth, async (req, res) => {
     if (description !== undefined) video.description = description;
     if (category) video.category = category;
     if (status) video.status = status;
+    if (req.file) video.thumbnail = req.file.path;
 
     await video.save();
-    res.json(video);
+
+    const uploader = await User.findOne({ id: video.uploaderId });
+    res.json({
+      ...video.toObject(),
+      userId: video.uploaderId,
+      channel: uploader ? uploader.username : 'Unknown',
+      channelAvatar: uploader ? (uploader.profilePicture || uploader.avatar) : 'https://i.pravatar.cc/150',
+      viewsCount: video.views,
+      views: `${video.views} views`,
+      timestamp: formatDateBR(video.createdAt)
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

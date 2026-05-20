@@ -82,6 +82,46 @@
   gap: 8px;
 }
 
+.more-actions-wrapper {
+  position: relative;
+}
+
+.more-actions-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 30;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+.more-actions-menu button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+.more-actions-menu button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.more-actions-btn {
+  min-width: 44px;
+  justify-content: center;
+}
+
 .action-btn {
   background: var(--surface-color);
   border: 1px solid var(--border-color);

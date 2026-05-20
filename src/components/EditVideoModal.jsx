@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
-import axios from 'axios'
-import config from '../config'
+import React, { useState, useEffect, useRef } from 'react'
+import toast from 'react-hot-toast'
+import api from '../api/api'
 import './EditVideoModal.css'
 
 const EditVideoModal = ({ video, onClose, onUpdate, userId }) => {
@@ -8,23 +8,56 @@ const EditVideoModal = ({ video, onClose, onUpdate, userId }) => {
   const [description, setDescription] = useState(video.description)
   const [status, setStatus] = useState(video.status || 'public')
   const [category, setCategory] = useState(video.category || 'All')
+  const [thumbnailFile, setThumbnailFile] = useState(null)
+  const [thumbnailPreview, setThumbnailPreview] = useState(video.thumbnail || '')
   const [saving, setSaving] = useState(false)
+  const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    setTitle(video.title)
+    setDescription(video.description)
+    setStatus(video.status || 'public')
+    setCategory(video.category || 'All')
+    setThumbnailFile(null)
+    setThumbnailPreview(video.thumbnail || '')
+  }, [video])
+
+  const handleThumbnailChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file.')
+      return
+    }
+
+    setThumbnailFile(file)
+    setThumbnailPreview(URL.createObjectURL(file))
+  }
 
   const handleSave = async (e) => {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await axios.put(`${config.apiUrl}/videos/${video.id}`, {
-        title,
-        description,
-        status,
-        category,
-        userId
+      const formData = new FormData()
+      formData.append('title', title)
+      formData.append('description', description)
+      formData.append('status', status)
+      formData.append('category', category)
+      formData.append('userId', userId)
+      if (thumbnailFile) {
+        formData.append('thumbnail', thumbnailFile)
+      }
+
+      const res = await api.put(`/videos/${video.id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       })
       onUpdate(res.data)
       onClose()
     } catch (err) {
-      alert('Failed to update video')
+      toast.error(err.response?.data?.message || 'Failed to update video')
     } finally {
       setSaving(false)
     }
@@ -35,6 +68,19 @@ const EditVideoModal = ({ video, onClose, onUpdate, userId }) => {
       <div className="modal-content glass fade-in">
         <h2>Edit Video Details</h2>
         <form onSubmit={handleSave}>
+          <div className="form-group">
+            <label>Thumbnail</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleThumbnailChange}
+            />
+            {thumbnailPreview && (
+              <img className="thumbnail-preview" src={thumbnailPreview} alt="Thumbnail preview" />
+            )}
+          </div>
+
           <div className="form-group">
             <label>Title</label>
             <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
