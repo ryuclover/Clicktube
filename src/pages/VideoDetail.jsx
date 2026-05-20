@@ -233,7 +233,7 @@ const VideoDetail = () => {
              <iframe src={video.url.includes('watch?v=') ? video.url.replace('watch?v=', 'embed/') : video.url.replace('youtu.be/', 'youtube.com/embed/')} title={video.title} frameBorder="0" allowFullScreen></iframe>
           ) : (
             video.url ? (
-              <CustomPlayer src={videoUrl} thumbnail={video.thumbnail} />
+              <CustomPlayer src={videoUrl} thumbnail={video.thumbnail} totalDuration={video.duration} />
             ) : (
               <div className="no-video">No video available</div>
             )

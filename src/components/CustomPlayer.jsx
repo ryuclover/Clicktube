@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Play, Pause, Volume2, VolumeX, Maximize, Settings, RotateCcw, RotateCw } from 'lucide-react'
 import './CustomPlayer.css'
 
-const CustomPlayer = ({ src, thumbnail }) => {
+const CustomPlayer = ({ src, thumbnail, totalDuration }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
@@ -30,6 +30,22 @@ const CustomPlayer = ({ src, thumbnail }) => {
   ]
 
   const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2]
+
+  const parseDurationToSeconds = (durationValue) => {
+    if (typeof durationValue !== 'string') return 0
+    const parts = durationValue.split(':').map((part) => Number(part))
+    if (parts.some((part) => !Number.isFinite(part))) return 0
+    if (parts.length === 2) {
+      return (parts[0] * 60) + parts[1]
+    }
+    if (parts.length === 3) {
+      return (parts[0] * 3600) + (parts[1] * 60) + parts[2]
+    }
+    return 0
+  }
+
+  const fallbackDuration = parseDurationToSeconds(totalDuration)
+  const effectiveDuration = Number.isFinite(duration) && duration > 0 ? duration : fallbackDuration
 
   const formatTime = (seconds) => {
     if (!Number.isFinite(seconds)) return '00:00'
@@ -134,7 +150,8 @@ const CustomPlayer = ({ src, thumbnail }) => {
 
   const handleLoadedMetadata = () => {
     if (!videoRef.current) return
-    setDuration(videoRef.current.duration || 0)
+    const metadataDuration = Number.isFinite(videoRef.current.duration) ? videoRef.current.duration : 0
+    setDuration(metadataDuration)
     videoRef.current.playbackRate = playbackRate
   }
 
@@ -224,6 +241,7 @@ const CustomPlayer = ({ src, thumbnail }) => {
         ref={videoRef}
         src={currentSrc}
         poster={thumbnail}
+        preload="metadata"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onClick={togglePlay}
@@ -269,7 +287,7 @@ const CustomPlayer = ({ src, thumbnail }) => {
               />
             </div>
 
-            <div className="time-display">{formatTime(currentTime)} / {formatTime(duration)}</div>
+            <div className="time-display">{formatTime(currentTime)} / {formatTime(effectiveDuration)}</div>
           </div>
 
           <div className="controls-right">
