@@ -15,6 +15,7 @@ const Profile = () => {
   const [bio, setBio] = useState('')
   const [banner, setBanner] = useState('')
   const [avatar, setAvatar] = useState('')
+  const [language, setLanguage] = useState('en')
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const fileInputRef = useRef(null)
 
@@ -28,7 +29,8 @@ const Profile = () => {
           setUsername(res.data.username)
           setBio(res.data.bio || '')
           setBanner(res.data.banner || '')
-          setAvatar(getAvatarUrl(res.data))
+            setAvatar(getAvatarUrl(res.data))
+            setLanguage(res.data.language || 'en')
         } catch (err) {
           console.error(err)
         }
@@ -71,7 +73,7 @@ const Profile = () => {
   const handleSave = async () => {
     const loadingToast = toast.loading('Updating profile...')
     try {
-      const res = await api.put(`/social/profile/${user.id}`, { username, bio, banner })
+      const res = await api.put(`/social/profile/${user.id}`, { username, bio, banner, language })
       setProfile(res.data)
       login(res.data, token) // Update global user state
       setIsEditing(false)
@@ -124,6 +126,13 @@ const Profile = () => {
               <h1>{profile.username}</h1>
             )}
             <p className="profile-email">{profile.email}</p>
+            <div className="profile-language">
+              <label>Language: </label>
+              <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+                <option value="en">English</option>
+                <option value="pt">Português</option>
+              </select>
+            </div>
           </div>
           <button className="edit-profile-btn" onClick={() => isEditing ? handleSave() : setIsEditing(true)}>
             {isEditing ? <Save size={18} /> : <Edit2 size={18} />}

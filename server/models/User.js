@@ -31,6 +31,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  language: {
+    type: String,
+    enum: ['en', 'pt'],
+    default: 'en'
+  },
   subscribers: {
     type: Number,
     default: 0

@@ -253,6 +253,7 @@ router.get('/profile/:userId', async (req, res) => {
       ...safeUser,
       avatar: getAvatarUrl(safeUser),
       profilePicture: safeUser.profilePicture || getAvatarUrl(safeUser),
+      language: safeUser.language || 'en',
       subscribers,
       videosCount
     });
@@ -273,11 +274,11 @@ router.get('/profile/:userId', async (req, res) => {
 router.put('/profile/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const { bio, username, banner } = req.body;
+    const { bio, username, banner, language } = req.body;
     
     const updatedUser = await User.findOneAndUpdate(
       { id: userId },
-      { $set: { bio, username, banner } },
+      { $set: { bio, username, banner, ...(language ? { language } : {}) } },
       { new: true }
     );
     
