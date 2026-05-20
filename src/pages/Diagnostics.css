@@ -1,0 +1,22 @@
+.diagnostics-page {
+  min-height: 100vh;
+  padding: 24px;
+  background: #1a1a1a;
+  color: #e5e7eb;
+}
+
+.diagnostics-page h1,
+.diagnostics-page h2 {
+  color: #fff;
+}
+
+.diagnostics-page button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.diagnostics-page pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
