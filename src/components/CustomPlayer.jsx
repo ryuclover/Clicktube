@@ -5,20 +5,95 @@ import './CustomPlayer.css'
 const CustomPlayer = ({ src, thumbnail }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
   const [isMuted, setIsMuted] = useState(false)
   const [volume, setVolume] = useState(1)
   const [showControls, setShowControls] = useState(true)
+  const [showSettings, setShowSettings] = useState(false)
+  const [playbackRate, setPlaybackRate] = useState(1)
+  const [selectedQuality, setSelectedQuality] = useState('auto')
+  const [currentSrc, setCurrentSrc] = useState(src)
   const videoRef = useRef(null)
   const playerRef = useRef(null)
+  const settingsRef = useRef(null)
   const controlsTimeout = useRef(null)
+  const restorePlaybackRef = useRef(null)
+
+  const isCloudinarySource = typeof src === 'string' && src.includes('/upload/')
+
+  const qualityOptions = [
+    { value: 'auto', label: 'Auto' },
+    { value: 'q_auto:best', label: 'Alta' },
+    { value: 'q_auto:eco', label: 'Media' },
+    { value: 'q_auto:low', label: 'Baixa' }
+  ]
+
+  const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2]
+
+  const formatTime = (seconds) => {
+    if (!Number.isFinite(seconds)) return '00:00'
+    const total = Math.max(0, Math.floor(seconds))
+    const hours = Math.floor(total / 3600)
+    const minutes = Math.floor((total % 3600) / 60)
+    const secs = total % 60
+
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+    }
+    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+  }
+
+  const buildQualitySrc = (sourceUrl, qualityValue) => {
+    if (!sourceUrl || !sourceUrl.includes('/upload/') || qualityValue === 'auto') {
+      return sourceUrl
+    }
+    return sourceUrl.replace('/upload/', `/upload/${qualityValue}/`)
+  }
 
   useEffect(() => {
     setIsPlaying(false)
     setProgress(0)
+    setCurrentTime(0)
+    setDuration(0)
+    setShowSettings(false)
+    setPlaybackRate(1)
+    setSelectedQuality('auto')
+    setCurrentSrc(src)
     if (videoRef.current) {
       videoRef.current.load()
     }
   }, [src])
+
+  useEffect(() => {
+    const onClickOutside = (event) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target)) {
+        setShowSettings(false)
+      }
+    }
+
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
+
+  useEffect(() => {
+    const video = videoRef.current
+    const restore = restorePlaybackRef.current
+    if (!video || !restore) return
+
+    const restorePlayback = () => {
+      if (Number.isFinite(restore.time)) {
+        video.currentTime = Math.min(restore.time, Number.isFinite(video.duration) ? video.duration : restore.time)
+      }
+      video.playbackRate = restore.rate
+      if (restore.wasPlaying) {
+        video.play().catch(() => {})
+      }
+      restorePlaybackRef.current = null
+    }
+
+    video.addEventListener('loadedmetadata', restorePlayback, { once: true })
+  }, [currentSrc])
 
   const togglePlay = () => {
     if (videoRef.current.paused) {
@@ -33,7 +108,9 @@ const CustomPlayer = ({ src, thumbnail }) => {
   const handleTimeUpdate = () => {
     const current = videoRef.current.currentTime
     const total = videoRef.current.duration
-    setProgress((current / total) * 100)
+    setCurrentTime(current)
+    setDuration(total || 0)
+    setProgress(total ? (current / total) * 100 : 0)
   }
 
   const handleProgressChange = (e) => {
@@ -53,6 +130,33 @@ const CustomPlayer = ({ src, thumbnail }) => {
     videoRef.current.volume = newVolume
     setVolume(newVolume)
     setIsMuted(newVolume === 0)
+  }
+
+  const handleLoadedMetadata = () => {
+    if (!videoRef.current) return
+    setDuration(videoRef.current.duration || 0)
+    videoRef.current.playbackRate = playbackRate
+  }
+
+  const handlePlaybackRateChange = (rate) => {
+    if (!videoRef.current) return
+    videoRef.current.playbackRate = rate
+    setPlaybackRate(rate)
+  }
+
+  const handleQualityChange = (qualityValue) => {
+    setSelectedQuality(qualityValue)
+    if (!videoRef.current || !isCloudinarySource) return
+
+    const nextSrc = buildQualitySrc(src, qualityValue)
+    if (!nextSrc || nextSrc === currentSrc) return
+
+    restorePlaybackRef.current = {
+      time: videoRef.current.currentTime,
+      rate: playbackRate,
+      wasPlaying: !videoRef.current.paused
+    }
+    setCurrentSrc(nextSrc)
   }
 
   const toggleFullScreen = () => {
@@ -86,6 +190,12 @@ const CustomPlayer = ({ src, thumbnail }) => {
         togglePlay()
       } else if (e.code === 'KeyM') {
         toggleMute()
+      } else if (e.code === 'Period') {
+        const nextRate = Math.min(2, Number((playbackRate + 0.25).toFixed(2)))
+        handlePlaybackRateChange(nextRate)
+      } else if (e.code === 'Comma') {
+        const nextRate = Math.max(0.5, Number((playbackRate - 0.25).toFixed(2)))
+        handlePlaybackRateChange(nextRate)
       } else if (e.code === 'ArrowRight') {
         skip(5)
       } else if (e.code === 'ArrowLeft') {
@@ -94,7 +204,7 @@ const CustomPlayer = ({ src, thumbnail }) => {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isMuted])
+  }, [isMuted, playbackRate])
 
   const handleMouseMove = () => {
     setShowControls(true)
@@ -112,9 +222,10 @@ const CustomPlayer = ({ src, thumbnail }) => {
     >
       <video 
         ref={videoRef}
-        src={src}
+        src={currentSrc}
         poster={thumbnail}
         onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
         onClick={togglePlay}
         onEnded={() => setIsPlaying(false)}
       />
@@ -157,12 +268,54 @@ const CustomPlayer = ({ src, thumbnail }) => {
                 className="volume-slider"
               />
             </div>
+
+            <div className="time-display">{formatTime(currentTime)} / {formatTime(duration)}</div>
           </div>
 
           <div className="controls-right">
-            <button className="control-btn">
-              <Settings size={20} />
-            </button>
+            <div className="settings-wrapper" ref={settingsRef}>
+              <button className="control-btn" onClick={() => setShowSettings((prev) => !prev)}>
+                <Settings size={20} />
+              </button>
+
+              {showSettings && (
+                <div className="settings-menu glass">
+                  <div className="settings-section">
+                    <p className="settings-title">Velocidade</p>
+                    <div className="settings-list">
+                      {speedOptions.map((speed) => (
+                        <button
+                          key={speed}
+                          type="button"
+                          className={`settings-item ${playbackRate === speed ? 'active' : ''}`}
+                          onClick={() => handlePlaybackRateChange(speed)}
+                        >
+                          {speed}x
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="settings-section">
+                    <p className="settings-title">Qualidade</p>
+                    <div className="settings-list">
+                      {isCloudinarySource ? qualityOptions.map((quality) => (
+                        <button
+                          key={quality.value}
+                          type="button"
+                          className={`settings-item ${selectedQuality === quality.value ? 'active' : ''}`}
+                          onClick={() => handleQualityChange(quality.value)}
+                        >
+                          {quality.label}
+                        </button>
+                      )) : (
+                        <span className="settings-disabled">Indisponivel para esta fonte</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             <button className="control-btn" onClick={toggleFullScreen}>
               <Maximize size={20} />
             </button>
