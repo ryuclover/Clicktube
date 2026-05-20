@@ -47,6 +47,9 @@ app.use(express.json({ limit: '10kb' })); // Body parser, limiting data size
 // Initialize MongoDB Connection
 connectDB();
 
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/videos', videoRoutes);

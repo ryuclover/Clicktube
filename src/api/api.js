@@ -37,4 +37,23 @@ api.interceptors.response.use(
   }
 );
 
+// Avatar upload function
+export const uploadAvatar = async (file, userId) => {
+  const formData = new FormData();
+  formData.append('profilePicture', file);
+  formData.append('userId', userId);
+
+  try {
+    const response = await api.post('/auth/upload-avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Avatar upload error:', error);
+    throw error;
+  }
+};
+
 export default api;

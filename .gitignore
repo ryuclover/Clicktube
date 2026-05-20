@@ -23,10 +23,30 @@ dist-ssr
 *.sln
 *.sw?
 
-.env*
-!.env.example
+.env
 .vercel
 test_video.mp4
 test_thumbnail.jpg
 download.js
 .env.render
+
+# Sensitive patterns
+.env*
+.env.*
+*.pem
+*.key
+*.crt
+credentials.json
+.aws/
+.netrc
+secrets.*
+service-account.json
+*.p12
+*.jks
+*.pfx
+*.sqlite
+*.db
+config/*.env
+server/.env
+.gcloud/
+.firebase/

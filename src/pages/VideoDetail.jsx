@@ -196,7 +196,11 @@ const VideoDetail = () => {
           <div className="video-actions-bar">
             <div className="channel-info">
               <Link to={`/channel/${video.userId}`} className="channel-avatar">
-                <img src={video.channelAvatar} alt={video.channel} />
+                <img 
+                  src={video.channelAvatar || '/assets/default-avatar.svg'} 
+                  alt={video.channel}
+                  onError={(e) => { e.target.src = '/assets/default-avatar.svg' }}
+                />
               </Link>
               <div className="channel-text">
                 <Link to={`/channel/${video.userId}`} className="channel-name">

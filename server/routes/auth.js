@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const uploadAvatar = require('../middleware/uploadAvatar');
 const env = require('../config/env');
 
 const router = express.Router();
@@ -103,6 +104,47 @@ router.get('/search', async (req, res) => {
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/**
+ * @route   POST /api/auth/upload-avatar
+ * @desc    Upload a profile picture for the user
+ * @access  Private
+ * @body    {file} profilePicture - Image file
+ * @body    {string} userId - User ID
+ */
+router.post('/upload-avatar', uploadAvatar.single('profilePicture'), async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    const user = await User.findOne({ id: userId });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // URL da imagem do Cloudinary
+    const avatarUrl = req.file.secure_url || req.file.path;
+    
+    user.profilePicture = avatarUrl;
+    await user.save();
+
+    res.json({ 
+      message: 'Avatar uploaded successfully', 
+      avatar: user.profilePicture,
+      user: { id: user.id, username: user.username, avatar: user.profilePicture }
+    });
+  } catch (error) {
+    console.error('Avatar upload error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 

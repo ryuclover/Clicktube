@@ -13,7 +13,11 @@ const VideoCard = ({ video, layout = 'vertical' }) => {
       </Link>
       <div className="video-info">
         <Link to={`/channel/${video.userId}`} className="channel-avatar">
-          <img src={video.channelAvatar} alt={video.channel} />
+          <img 
+            src={video.channelAvatar || '/assets/default-avatar.svg'} 
+            alt={video.channel}
+            onError={(e) => { e.target.src = '/assets/default-avatar.svg' }}
+          />
         </Link>
         <div className="text-info">
           <Link to={`/video/${video.id}`}>

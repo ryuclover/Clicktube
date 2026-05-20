@@ -1,9 +1,9 @@
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useRef } from 'react'
 import toast from 'react-hot-toast'
-import api from '../api/api'
+import api, { uploadAvatar } from '../api/api'
 import config from '../config'
 import { AuthContext } from '../context/AuthContext'
-import { Edit2, Save } from 'lucide-react'
+import { Edit2, Save, Upload } from 'lucide-react'
 import './Profile.css'
 
 const Profile = () => {
@@ -13,6 +13,9 @@ const Profile = () => {
   const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
   const [banner, setBanner] = useState('')
+  const [avatar, setAvatar] = useState('')
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     if (user) {
@@ -24,6 +27,7 @@ const Profile = () => {
           setUsername(res.data.username)
           setBio(res.data.bio || '')
           setBanner(res.data.banner || '')
+          setAvatar(res.data.profilePicture || res.data.avatar)
         } catch (err) {
           console.error(err)
         }
@@ -31,6 +35,37 @@ const Profile = () => {
       fetchProfile()
     }
   }, [user])
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File too large. Max 5MB.')
+      return
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file.')
+      return
+    }
+
+    setIsUploadingAvatar(true)
+    try {
+      const result = await uploadAvatar(file, user.id)
+      setAvatar(result.avatar)
+      setProfile({ ...profile, profilePicture: result.avatar })
+      login({ ...user, avatar: result.avatar }, token)
+      toast.success('Avatar updated!')
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Upload failed')
+    } finally {
+      setIsUploadingAvatar(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const handleSave = async () => {
     const loadingToast = toast.loading('Updating profile...')
@@ -52,7 +87,30 @@ const Profile = () => {
     <div className="profile-page fade-in">
       <div className="profile-card glass">
         <div className="profile-header">
-          <img src={profile.avatar} alt={profile.username} className="profile-avatar-large" />
+          <div className="avatar-container">
+            <img 
+              src={avatar || '/assets/default-avatar.svg'} 
+              alt={profile.username} 
+              className="profile-avatar-large"
+              onError={(e) => { e.target.src = '/assets/default-avatar.svg' }}
+            />
+            <button 
+              className="avatar-upload-btn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingAvatar}
+              title="Upload new avatar"
+            >
+              <Upload size={16} />
+            </button>
+            <input 
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              style={{ display: 'none' }}
+              disabled={isUploadingAvatar}
+            />
+          </div>
           <div className="profile-main-info">
             {isEditing ? (
               <input 

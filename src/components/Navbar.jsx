@@ -127,7 +127,12 @@ const Navbar = () => {
             </div>
             <div className="user-profile-nav">
               <Link to="/profile">
-                <img src={user.avatar} alt={user.username} className="nav-avatar" />
+                <img 
+                  src={user.avatar || '/assets/default-avatar.svg'} 
+                  alt={user.username} 
+                  className="nav-avatar"
+                  onError={(e) => { e.target.src = '/assets/default-avatar.svg' }}
+                />
               </Link>
               <button className="logout-btn" onClick={logout} title="Logout">
                 <LogOut size={18} />

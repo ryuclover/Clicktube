@@ -8,7 +8,11 @@ const ChannelResultCard = ({ channel }) => {
   return (
     <div className="channel-result-card fade-in">
       <Link to={`/channel/${channel.id}`} className="channel-result-avatar">
-        <img src={channel.avatar} alt={channel.username} />
+        <img 
+          src={channel.avatar || '/assets/default-avatar.svg'} 
+          alt={channel.username}
+          onError={(e) => { e.target.src = '/assets/default-avatar.svg' }}
+        />
       </Link>
       <div className="channel-result-info">
         <Link to={`/channel/${channel.id}`}>

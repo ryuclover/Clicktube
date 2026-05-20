@@ -1,0 +1,31 @@
+#!/bin/sh
+# Pre-commit hook: block commits that contain likely secrets in staged changes.
+# To enable locally: `git config core.hooksPath .githooks`
+
+set -e
+
+PATTERNS="CLOUDINARY_API_SECRET|CLOUDINARY_URL|CLOUDINARY_API_KEY|MONGO_URI|AWS_SECRET|aws_secret_access_key|AKIA|BEGIN RSA PRIVATE KEY|-----BEGIN PRIVATE KEY-----|PASSWORD=|password=|PRIVATE_KEY|service-account.json"
+
+FOUND=0
+staged_files=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -z "$staged_files" ]; then
+  exit 0
+fi
+
+for file in $staged_files; do
+  # ignore binary files by checking git mime
+  if git show :"$file" | grep -qI "^"; then
+    if git show :"$file" | grep -E -n "$PATTERNS" >/dev/null 2>&1; then
+      echo "Potential secret detected in staged file: $file"
+      git --no-pager diff --cached -- "$file" | sed -n '1,200p'
+      FOUND=1
+    fi
+  fi
+done
+
+if [ "$FOUND" -eq 1 ]; then
+  echo "\nCommit blocked: possible secrets found in staged files.\n- Remove secrets, add the file to .gitignore, or use environment variables instead.\n- To enable hooks: git config core.hooksPath .githooks\n"
+  exit 1
+fi
+
+exit 0
