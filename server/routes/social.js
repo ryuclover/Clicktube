@@ -246,6 +246,7 @@ router.get('/profile/:userId', async (req, res) => {
     const { password, ...safeUser } = user.toObject();
     res.json({
       ...safeUser,
+      avatar: safeUser.profilePicture || safeUser.avatar,
       subscribers,
       videosCount
     });
@@ -282,6 +283,7 @@ router.put('/profile/:userId', async (req, res) => {
     
     res.json({
       ...safeUser,
+      avatar: safeUser.profilePicture || safeUser.avatar,
       subscribers,
       videosCount
     });

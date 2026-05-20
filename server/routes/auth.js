@@ -46,13 +46,14 @@ router.post('/register', [
       username,
       email,
       password: hashedPassword,
-      avatar: `https://i.pravatar.cc/150?u=${username}`
+      avatar: `https://i.pravatar.cc/150?u=${username}`,
+      profilePicture: `https://i.pravatar.cc/150?u=${username}`
     });
 
     await user.save();
 
     const token = jwt.sign({ id: user.id, role: user.role }, env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, username, email, avatar: user.avatar, role: user.role } });
+    res.json({ token, user: { id: user.id, username, email, avatar: user.avatar, profilePicture: user.profilePicture, role: user.role } });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -80,7 +81,7 @@ router.post('/login', [
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user.id, role: user.role }, env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, username: user.username, email: user.email, avatar: user.avatar, role: user.role } });
+    res.json({ token, user: { id: user.id, username: user.username, email: user.email, avatar: user.avatar, profilePicture: user.profilePicture, role: user.role } });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -132,15 +133,16 @@ router.post('/upload-avatar', uploadAvatar.single('profilePicture'), async (req,
     }
 
     // URL da imagem do Cloudinary
-    const avatarUrl = req.file.secure_url || req.file.path;
+    const avatarUrl = req.file.path || req.file.secure_url;
     
     user.profilePicture = avatarUrl;
+    user.avatar = avatarUrl;
     await user.save();
 
     res.json({ 
       message: 'Avatar uploaded successfully', 
       avatar: user.profilePicture,
-      user: { id: user.id, username: user.username, avatar: user.profilePicture }
+      user: { id: user.id, username: user.username, avatar: user.profilePicture, profilePicture: user.profilePicture }
     });
   } catch (error) {
     console.error('Avatar upload error:', error);
