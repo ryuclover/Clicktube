@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { useParams } from 'react-router-dom'
 import api from '../api/api'
 import { CheckCircle, Users, Video } from 'lucide-react'
+import { AuthContext } from '../context/AuthContext'
 import VideoCard from '../components/VideoCard'
 import Skeleton from '../components/Skeleton'
 import './ChannelDetail.css'
 
 const ChannelDetail = () => {
   const { id } = useParams()
+  const { user } = useContext(AuthContext)
   const [channel, setChannel] = useState(null)
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
@@ -62,7 +64,7 @@ const ChannelDetail = () => {
       <div className="channel-header">
         <div className="channel-header-content">
           <div className="channel-avatar-large">
-            <img src={channel.avatar} alt={channel.username} />
+            <img src={channel.avatar || '/assets/default-avatar.svg'} alt={channel.username} onError={(e) => { e.target.src = '/assets/default-avatar.svg' }} />
           </div>
           <div className="channel-info-main">
             <h1 className="channel-name-large">
@@ -77,7 +79,9 @@ const ChannelDetail = () => {
               {channel.bio || 'Welcome to my channel! Subscribe for more content.'}
             </p>
             <div className="channel-actions">
-              <button className="subscribe-btn">Subscribe</button>
+              <button className="subscribe-btn" disabled={user?.id === channel.id}>
+                {user?.id === channel.id ? 'Your channel' : 'Subscribe'}
+              </button>
               <button className="join-btn">Join</button>
             </div>
           </div>

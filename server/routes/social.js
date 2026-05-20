@@ -8,6 +8,7 @@ const Like = require('../models/Like');
 const Subscription = require('../models/Subscription');
 const History = require('../models/History');
 const Playlist = require('../models/Playlist');
+const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ const createNotification = async ({ userId, type, fromUser, videoId, message }) 
       fromUser: {
         id: fromUser.id,
         username: fromUser.username,
-        avatar: fromUser.avatar
+        avatar: fromUser.profilePicture || fromUser.avatar
       },
       videoId: videoId || null,
       message
@@ -53,7 +54,7 @@ router.post('/comment', async (req, res) => {
       videoId,
       userId,
       username: user ? user.username : 'User',
-      avatar: user ? user.avatar : '',
+      avatar: user ? (user.profilePicture || user.avatar) : '',
       text,
       parentId: parentId || null,
       timestamp: 'Just now'
@@ -116,6 +117,7 @@ router.post('/like', async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
+      const { requireAuth } = require('../middleware/auth');
 });
 
 // Subscriptions
@@ -123,38 +125,45 @@ router.post('/like', async (req, res) => {
  * @route   POST /api/social/subscribe
  * @desc    Toggle subscription to a channel
  * @access  Private
- * @body    {string} userId - The follower user ID
  * @body    {string} channelId - The target channel (user) ID
  */
-router.post('/subscribe', async (req, res) => {
+router.post('/subscribe', requireAuth, async (req, res) => {
   try {
-    const { userId, channelId } = req.body;
+    const { channelId } = req.body;
+    const userId = req.user.id;
+
+    if (!channelId) {
+      return res.status(400).json({ message: 'Channel ID is required' });
+    }
+
+    if (userId === channelId) {
+      return res.status(400).json({ message: 'You cannot subscribe to your own channel' });
+    }
+
     const user = await User.findOne({ id: userId });
     const existing = await Subscription.findOne({ userId, channelId });
-    
+
     if (existing) {
       await Subscription.findOneAndDelete({ userId, channelId });
-      res.json({ success: true, subscribed: false });
-    } else {
-      const newSub = new Subscription({
-        id: uuidv4(),
-        userId,
-        channelId
-      });
-      await newSub.save();
-      
-      // Notify channel owner
-      await createNotification({
-        userId: channelId,
-        type: 'subscribe',
-        fromUser: user,
-        message: 'subscribed to your channel!'
-      });
-      
-      res.json({ success: true, subscribed: true });
+      return res.json({ success: true, subscribed: false });
     }
+
+    const newSub = new Subscription({
+      id: uuidv4(),
+      userId,
+      channelId
+    });
+    await newSub.save();
+
+    await createNotification({
+      userId: channelId,
+      type: 'subscribe',
+      fromUser: user,
+      message: 'subscribed to your channel!'
+    });
+
+    return res.json({ success: true, subscribed: true });
   } catch (error) {
-    // BUG #4 FIX: Handle race-condition duplicate key error gracefully
     if (error.code === 11000) {
       return res.status(409).json({ message: 'Already subscribed' });
     }
@@ -167,7 +176,7 @@ router.get('/subscriptions/:userId', async (req, res) => {
     const userSubs = await Subscription.find({ userId: req.params.userId });
     const subscribedChannels = await Promise.all(userSubs.map(async (sub) => {
       const channel = await User.findOne({ id: sub.channelId });
-      return channel ? { id: channel.id, username: channel.username, avatar: channel.avatar } : null;
+      return channel ? { id: channel.id, username: channel.username, avatar: channel.profilePicture || channel.avatar } : null;
     }));
     res.json(subscribedChannels.filter(Boolean));
   } catch (error) {
@@ -176,17 +185,6 @@ router.get('/subscriptions/:userId', async (req, res) => {
 });
 
 // History
-router.get('/history/:userId', async (req, res) => {
-  try {
-    const userHistory = await History.find({ userId: req.params.userId }).sort({ watchedAt: -1 });
-    const historyVideos = await Promise.all(userHistory.map(async (h) => {
-      return await Video.findOne({ id: h.videoId });
-    }));
-    res.json(historyVideos.filter(Boolean));
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
 /**
  * @route   POST /api/social/history
@@ -331,10 +329,10 @@ router.get('/playlists/detail/:id', async (req, res) => {
         ...v,
         userId: v.uploaderId,
         channel: uploader ? uploader.username : 'Unknown',
-        channelAvatar: uploader ? uploader.avatar : 'https://i.pravatar.cc/150',
+        channelAvatar: uploader ? (uploader.profilePicture || uploader.avatar) : 'https://i.pravatar.cc/150',
         viewsCount: v.views,
         views: `${v.views} views`,
-        timestamp: v.createdAt ? new Date(v.createdAt).toLocaleDateString() : 'Just now',
+        timestamp: formatDateBR(v.createdAt),
       };
     }));
 

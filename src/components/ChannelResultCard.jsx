@@ -1,10 +1,14 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle } from 'lucide-react'
+import { useContext } from 'react'
+import { AuthContext } from '../context/AuthContext'
 import { formatSubscribers } from '../utils/format'
 import './ChannelResultCard.css'
 
 const ChannelResultCard = ({ channel }) => {
+  const { user } = useContext(AuthContext)
+
   return (
     <div className="channel-result-card fade-in">
       <Link to={`/channel/${channel.id}`} className="channel-result-avatar">
@@ -26,7 +30,9 @@ const ChannelResultCard = ({ channel }) => {
         <p className="channel-result-bio">{channel.bio || 'No biography available.'}</p>
       </div>
       <div className="channel-result-action">
-        <button className="subscribe-btn">Subscribe</button>
+        <button className="subscribe-btn" disabled={user?.id === channel.id}>
+          {user?.id === channel.id ? 'Your channel' : 'Subscribe'}
+        </button>
       </div>
     </div>
   )

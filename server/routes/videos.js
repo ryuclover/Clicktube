@@ -9,6 +9,26 @@ const { requireAuth, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+const formatDateBR = (value) => {
+  if (!value) return 'Just now';
+  return new Date(value).toLocaleDateString('pt-BR');
+};
+
+const buildRandomThumbnail = (videoUrl, duration) => {
+  if (!videoUrl || !videoUrl.includes('/upload/')) {
+    return 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=1000';
+  }
+
+  const [minutes, seconds] = String(duration || '').split(':').map(Number);
+  const totalSeconds = Number.isFinite(minutes) && Number.isFinite(seconds)
+    ? (minutes * 60) + seconds
+    : 10;
+  const maxSample = Math.max(1, Math.min(totalSeconds - 1, 10));
+  const sampleSecond = Math.max(0, Math.floor(Math.random() * maxSample));
+
+  return videoUrl.replace('/upload/', `/upload/so_${sampleSecond},f_jpg/`);
+};
+
 /**
  * @route   GET /api/videos
  * @desc    Get videos with filtering, sorting, and pagination
@@ -81,10 +101,10 @@ router.get('/', optionalAuth, async (req, res) => {
         ...v,
         userId: v.uploaderId,
         channel: uploader ? uploader.username : 'Unknown',
-        channelAvatar: uploader ? uploader.avatar : 'https://i.pravatar.cc/150',
+        channelAvatar: uploader ? (uploader.profilePicture || uploader.avatar) : 'https://i.pravatar.cc/150',
         viewsCount: v.views,
         views: `${v.views} views`,
-        timestamp: v.createdAt ? new Date(v.createdAt).toLocaleDateString() : 'Just now',
+        timestamp: formatDateBR(v.createdAt),
         likes: 0,
         ...extraStats
       };
@@ -155,7 +175,7 @@ router.post(
         url: videoFile.path,
         thumbnail: thumbnailFile
           ? thumbnailFile.path
-          : 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=1000',
+          : buildRandomThumbnail(videoFile.path, duration),
         uploaderId: userId,
         views: 0
       });
@@ -166,7 +186,7 @@ router.post(
         ...newVideo.toObject(),
         userId: newVideo.uploaderId,
         channel: user ? user.username : 'Unknown',
-        channelAvatar: user ? user.avatar : 'https://i.pravatar.cc/150',
+        channelAvatar: user ? (user.profilePicture || user.avatar) : 'https://i.pravatar.cc/150',
         viewsCount: 0,
         views: '0 views',
         timestamp: 'Just now',
@@ -213,10 +233,10 @@ router.get('/:id', async (req, res) => {
       ...video,
       userId: video.uploaderId,
       channel: uploader ? uploader.username : 'Unknown',
-      channelAvatar: uploader ? uploader.avatar : 'https://i.pravatar.cc/150',
+      channelAvatar: uploader ? (uploader.profilePicture || uploader.avatar) : 'https://i.pravatar.cc/150',
       viewsCount: video.views,
       views: `${video.views} views`,
-      timestamp: video.createdAt ? new Date(video.createdAt).toLocaleDateString() : 'Just now',
+      timestamp: formatDateBR(video.createdAt),
     };
 
     res.json(enriched);
@@ -233,15 +253,32 @@ router.get('/:id', async (req, res) => {
  * BUG #1 FIX: Now safely placed AFTER /upload and /suggestions so there
  * is no route conflict.
  */
-router.post('/:id/view', async (req, res) => {
+router.post('/:id/view', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const video = await Video.findOne({ id });
+    const viewerId = req.user?.id;
 
-    if (video) {
-      video.views += 1;
-      await video.save();
-      return res.json({ success: true, views: video.views });
+    if (viewerId) {
+      const updatedVideo = await Video.findOneAndUpdate(
+        { id, viewedBy: { $ne: viewerId } },
+        { $inc: { views: 1 }, $addToSet: { viewedBy: viewerId } },
+        { new: true }
+      );
+
+      if (updatedVideo) {
+        return res.json({ success: true, views: updatedVideo.views });
+      }
+
+      const existingVideo = await Video.findOne({ id });
+      if (existingVideo) {
+        return res.json({ success: true, views: existingVideo.views });
+      }
+    } else {
+      const video = await Video.findOneAndUpdate({ id }, { $inc: { views: 1 } }, { new: true });
+
+      if (video) {
+        return res.json({ success: true, views: video.views });
+      }
     }
 
     res.status(404).json({ message: 'Video not found' });

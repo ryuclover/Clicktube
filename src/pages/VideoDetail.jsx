@@ -73,6 +73,10 @@ const VideoDetail = () => {
   // Effect 3: Check subscription when video owner or logged-in user changes.
   useEffect(() => {
     if (!user || !video) return
+    if (video.userId === user.id) {
+      setSubscribed(false)
+      return
+    }
     api.get(`/social/subscriptions/${user.id}`)
       .then(res => setSubscribed(res.data.some(sub => sub.id === video.userId)))
       .catch(err => console.error('Error checking subscription', err))
@@ -101,16 +105,14 @@ const VideoDetail = () => {
 
   const handleSubscribe = async () => {
     if (!user) return toast.error('Please login to subscribe')
+    if (video.userId === user.id) return toast.error('You cannot subscribe to your own channel')
     try {
-      const res = await api.post('/social/subscribe', { 
-        userId: user.id, 
-        channelId: video.userId 
-      })
+      const res = await api.post('/social/subscribe', { channelId: video.userId })
       setSubscribed(res.data.subscribed)
       setUploaderSubscribers(prev => res.data.subscribed ? prev + 1 : Math.max(0, prev - 1))
       toast.success(res.data.subscribed ? 'Subscribed!' : 'Unsubscribed')
     } catch (err) {
-      toast.error('Action failed')
+      toast.error(err.response?.data?.message || 'Action failed')
     }
   }
 
@@ -211,8 +213,9 @@ const VideoDetail = () => {
               <button 
                 className={`subscribe-btn ${subscribed ? 'subscribed' : ''}`}
                 onClick={handleSubscribe}
+                disabled={video.userId === user?.id}
               >
-                {subscribed ? 'Subscribed' : 'Subscribe'}
+                {video.userId === user?.id ? 'Your channel' : (subscribed ? 'Subscribed' : 'Subscribe')}
               </button>
             </div>
             

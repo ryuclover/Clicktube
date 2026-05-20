@@ -30,6 +30,10 @@ const videoSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  viewedBy: {
+    type: [String],
+    default: []
+  },
   category: {
     type: String,
     default: 'General'

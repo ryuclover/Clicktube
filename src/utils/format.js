@@ -23,3 +23,10 @@ export const formatSubscribers = (count) => {
   }
   return num + ' subscribers';
 };
+
+export const formatDateBR = (value) => {
+  if (!value) return 'Just now';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Just now';
+  return date.toLocaleDateString('pt-BR');
+};
