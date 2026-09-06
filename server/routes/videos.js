@@ -6,6 +6,7 @@ const Like = require('../models/Like');
 const Comment = require('../models/Comment');
 const { uploadCloud } = require('../config/cloudinary');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
+const { requireDb } = require('../middleware/requireDb');
 const { getAvatarUrl, formatDateBR } = require('../utils/display');
 
 const router = express.Router();
@@ -38,7 +39,7 @@ const buildRandomThumbnail = (videoUrl, duration) => {
  * @query   {number}  page      - Page number
  * @query   {number}  limit     - Items per page
  */
-router.get('/', optionalAuth, async (req, res) => {
+router.get('/', optionalAuth, requireDb, async (req, res) => {
   try {
     const { category, sort, search, status, userId, withStats, page = 1, limit = 12 } = req.query;
 
@@ -118,7 +119,7 @@ router.get('/', optionalAuth, async (req, res) => {
  * @desc    Get search suggestions based on partial title
  * @access  Public
  */
-router.get('/suggestions', async (req, res) => {
+router.get('/suggestions', requireDb, async (req, res) => {
   try {
     const { q } = req.query;
     if (!q) return res.json([]);
@@ -217,7 +218,7 @@ router.post(
  * @desc    Get a single video by its ID
  * @access  Public
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireDb, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -249,7 +250,7 @@ router.get('/:id', async (req, res) => {
  * BUG #1 FIX: Now safely placed AFTER /upload and /suggestions so there
  * is no route conflict.
  */
-router.post('/:id/view', optionalAuth, async (req, res) => {
+router.post('/:id/view', optionalAuth, requireDb, async (req, res) => {
   try {
     const { id } = req.params;
     const viewerId = req.user?.id;

@@ -9,6 +9,7 @@ const Subscription = require('../models/Subscription');
 const History = require('../models/History');
 const Playlist = require('../models/Playlist');
 const { requireAuth } = require('../middleware/auth');
+const { requireDb } = require('../middleware/requireDb');
 const { getAvatarUrl, formatDateBR } = require('../utils/display');
 
 const router = express.Router();
@@ -83,7 +84,7 @@ router.post('/comment', async (req, res) => {
   }
 });
 
-router.get('/comments/:videoId', async (req, res) => {
+router.get('/comments/:videoId', requireDb, async (req, res) => {
   try {
     const comments = await Comment.find({ videoId: req.params.videoId }).sort({ createdAt: -1 }).lean();
     res.json(comments.map((comment) => ({
@@ -178,7 +179,7 @@ router.post('/subscribe', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/subscriptions/:userId', async (req, res) => {
+router.get('/subscriptions/:userId', requireDb, async (req, res) => {
   try {
     const userSubs = await Subscription.find({ userId: req.params.userId });
     const subscribedChannels = await Promise.all(userSubs.map(async (sub) => {
@@ -224,7 +225,7 @@ router.post('/history', async (req, res) => {
  * @desc    Get enriched watch history for a user (newest first)
  * @access  Public (frontend guards the page behind login)
  */
-router.get('/history/:userId', async (req, res) => {
+router.get('/history/:userId', requireDb, async (req, res) => {
   try {
     const entries = await History.find({ userId: req.params.userId })
       .sort({ watchedAt: -1 })
@@ -263,7 +264,7 @@ router.get('/history/:userId', async (req, res) => {
  * @desc    Get videos liked by a user (newest likes first)
  * @access  Public (frontend guards the page behind login)
  */
-router.get('/liked/:userId', async (req, res) => {
+router.get('/liked/:userId', requireDb, async (req, res) => {
   try {
     const likes = await Like.find({ userId: req.params.userId, type: 'like' })
       .sort({ createdAt: -1 })
@@ -297,7 +298,7 @@ router.get('/liked/:userId', async (req, res) => {
 });
 
 // Notifications
-router.get('/notifications/:userId', async (req, res) => {
+router.get('/notifications/:userId', requireDb, async (req, res) => {
   try {
     const userNotifications = await Notification.find({ userId: req.params.userId }).sort({ createdAt: -1 });
     res.json(userNotifications);
@@ -316,7 +317,7 @@ router.put('/notifications/:id/read', async (req, res) => {
 });
 
 // Profile Management
-router.get('/profile/:userId', async (req, res) => {
+router.get('/profile/:userId', requireDb, async (req, res) => {
   try {
     const user = await User.findOne({ id: req.params.userId });
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -394,7 +395,7 @@ router.post('/playlists', async (req, res) => {
   }
 });
 
-router.get('/playlists/:userId', async (req, res) => {
+router.get('/playlists/:userId', requireDb, async (req, res) => {
   try {
     const userPlaylists = await Playlist.find({ userId: req.params.userId });
     res.json(userPlaylists);
@@ -403,7 +404,7 @@ router.get('/playlists/:userId', async (req, res) => {
   }
 });
 
-router.get('/playlists/detail/:id', async (req, res) => {
+router.get('/playlists/detail/:id', requireDb, async (req, res) => {
   try {
     const playlist = await Playlist.findOne({ id: req.params.id }).lean();
     if (!playlist) return res.status(404).json({ message: 'Playlist not found' });

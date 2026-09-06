@@ -16,20 +16,31 @@ const Home = () => {
   const [sort, setSort] = useState('newest')
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [loadError, setLoadError] = useState(null)
 
   const fetchVideos = useCallback(async (pageNum, isNewCategory = false) => {
     if (pageNum === 1) setLoading(true)
     else setLoadingMore(true)
+    if (pageNum === 1) setLoadError(null)
 
     try {
       const res = await api.get('/videos', {
         params: { category: activeCategory, sort, page: pageNum, limit: 12 }
       })
-      const newVideos = res.data.videos
+      const newVideos = res.data.videos || []
       setVideos(prev => isNewCategory ? newVideos : [...prev, ...newVideos])
       setHasMore(res.data.page < res.data.totalPages)
     } catch (err) {
-      toast.error('Failed to load videos')
+      const code = err.response?.data?.code
+      const status = err.response?.status
+      if (code === 'DB_UNAVAILABLE' || status === 503) {
+        setLoadError('db')
+      } else if (!err.response) {
+        setLoadError('network')
+      } else {
+        setLoadError('generic')
+      }
+      if (pageNum === 1) toast.error('Failed to load videos')
       console.error('Failed to fetch videos', err)
     } finally {
       setLoading(false)
@@ -80,6 +91,24 @@ const Home = () => {
       <div className="video-grid">
         {loading ? (
           Array(8).fill(0).map((_, i) => <SkeletonCard key={i} />)
+        ) : loadError && videos.length === 0 ? (
+          <div className="empty-message" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 20px' }}>
+            <p style={{ fontSize: '1.1rem', marginBottom: '8px' }}>
+              {loadError === 'db'
+                ? 'Database is temporarily unavailable.'
+                : loadError === 'network'
+                  ? 'Could not reach the server. Check your connection.'
+                  : 'Failed to load videos.'}
+            </p>
+            <p style={{ opacity: 0.7, marginBottom: '16px' }}>
+              {loadError === 'db'
+                ? 'The backend is online but MongoDB is disconnected. Try again in a moment.'
+                : 'Please try again.'}
+            </p>
+            <button className="load-more-btn" onClick={() => fetchVideos(1, true)}>
+              Try again
+            </button>
+          </div>
         ) : (
           videos.map((video, index) => (
             <VideoCard key={`${video.id}-${index}`} video={video} />
