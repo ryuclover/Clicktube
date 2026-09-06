@@ -219,6 +219,83 @@ router.post('/history', async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/social/history/:userId
+ * @desc    Get enriched watch history for a user (newest first)
+ * @access  Public (frontend guards the page behind login)
+ */
+router.get('/history/:userId', async (req, res) => {
+  try {
+    const entries = await History.find({ userId: req.params.userId })
+      .sort({ watchedAt: -1 })
+      .lean();
+    if (!entries.length) return res.json([]);
+
+    const videoIds = entries.map((e) => e.videoId);
+    const videos = await Video.find({ id: { $in: videoIds } }).lean();
+    const byId = new Map(videos.map((v) => [v.id, v]));
+
+    const enriched = await Promise.all(
+      entries.map(async (entry) => {
+        const v = byId.get(entry.videoId);
+        if (!v) return null;
+        const uploader = await User.findOne({ id: v.uploaderId });
+        return {
+          ...v,
+          userId: v.uploaderId,
+          channel: uploader ? uploader.username : 'Unknown',
+          channelAvatar: getAvatarUrl(uploader),
+          viewsCount: v.views,
+          views: `${v.views} views`,
+          timestamp: formatDateBR(v.createdAt),
+          watchedAt: entry.watchedAt,
+        };
+      })
+    );
+    res.json(enriched.filter(Boolean));
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/**
+ * @route   GET /api/social/liked/:userId
+ * @desc    Get videos liked by a user (newest likes first)
+ * @access  Public (frontend guards the page behind login)
+ */
+router.get('/liked/:userId', async (req, res) => {
+  try {
+    const likes = await Like.find({ userId: req.params.userId, type: 'like' })
+      .sort({ createdAt: -1 })
+      .lean();
+    if (!likes.length) return res.json([]);
+
+    const videoIds = likes.map((l) => l.videoId);
+    const videos = await Video.find({ id: { $in: videoIds } }).lean();
+    const byId = new Map(videos.map((v) => [v.id, v]));
+
+    const enriched = await Promise.all(
+      likes.map(async (like) => {
+        const v = byId.get(like.videoId);
+        if (!v) return null;
+        const uploader = await User.findOne({ id: v.uploaderId });
+        return {
+          ...v,
+          userId: v.uploaderId,
+          channel: uploader ? uploader.username : 'Unknown',
+          channelAvatar: getAvatarUrl(uploader),
+          viewsCount: v.views,
+          views: `${v.views} views`,
+          timestamp: formatDateBR(v.createdAt),
+        };
+      })
+    );
+    res.json(enriched.filter(Boolean));
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Notifications
 router.get('/notifications/:userId', async (req, res) => {
   try {

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
-import config from '../config'
+import api from '../api/api'
 import { Plus, Check, X } from 'lucide-react'
 import './PlaylistModal.css'
 
@@ -12,7 +11,7 @@ const PlaylistModal = ({ videoId, userId, onClose }) => {
   useEffect(() => {
     const fetchPlaylists = async () => {
       try {
-        const res = await axios.get(`${config.apiUrl}/social/playlists/${userId}`)
+        const res = await api.get(`/social/playlists/${userId}`)
         setPlaylists(res.data)
       } catch (err) {
         console.error(err)
@@ -23,7 +22,7 @@ const PlaylistModal = ({ videoId, userId, onClose }) => {
 
   const toggleVideo = async (playlistId) => {
     try {
-      const res = await axios.post(`${config.apiUrl}/social/playlists/${playlistId}/video`, { videoId })
+      const res = await api.post(`/social/playlists/${playlistId}/video`, { videoId })
       setPlaylists(playlists.map(p => p.id === playlistId ? res.data : p))
     } catch (err) {
       alert('Error updating playlist')
@@ -34,7 +33,7 @@ const PlaylistModal = ({ videoId, userId, onClose }) => {
     e.preventDefault()
     if (!newPlaylistName.trim()) return
     try {
-      const res = await axios.post(`${config.apiUrl}/social/playlists`, {
+      const res = await api.post(`/social/playlists`, {
         userId,
         name: newPlaylistName,
         videoIds: [videoId]

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react'
 import { useParams } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import api from '../api/api'
 import { CheckCircle, Users, Video } from 'lucide-react'
 import { AuthContext } from '../context/AuthContext'
@@ -14,6 +15,7 @@ const ChannelDetail = () => {
   const [channel, setChannel] = useState(null)
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [subscribed, setSubscribed] = useState(false)
 
   useEffect(() => {
     const fetchChannelData = async () => {
@@ -28,6 +30,18 @@ const ChannelDetail = () => {
           params: { userId: id }
         })
         setVideos(videosRes.data.videos || [])
+
+        // Check subscription status
+        if (user && user.id !== id) {
+          try {
+            const subsRes = await api.get(`/social/subscriptions/${user.id}`)
+            setSubscribed((subsRes.data || []).some((sub) => sub.id === id))
+          } catch {
+            setSubscribed(false)
+          }
+        } else {
+          setSubscribed(false)
+        }
       } catch (err) {
         console.error('Error fetching channel data', err)
       } finally {
@@ -35,7 +49,23 @@ const ChannelDetail = () => {
       }
     }
     fetchChannelData()
-  }, [id])
+  }, [id, user?.id])
+
+  const handleSubscribe = async () => {
+    if (!user) return toast.error('Please login to subscribe')
+    if (user.id === channel.id) return toast.error('You cannot subscribe to your own channel')
+    try {
+      const res = await api.post('/social/subscribe', { channelId: channel.id })
+      setSubscribed(res.data.subscribed)
+      setChannel((prev) => prev ? {
+        ...prev,
+        subscribers: Math.max(0, (prev.subscribers || 0) + (res.data.subscribed ? 1 : -1))
+      } : prev)
+      toast.success(res.data.subscribed ? 'Subscribed!' : 'Unsubscribed')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Action failed')
+    }
+  }
 
   if (loading) {
     return (
@@ -80,8 +110,12 @@ const ChannelDetail = () => {
               {channel.bio || 'Welcome to my channel! Subscribe for more content.'}
             </p>
             <div className="channel-actions">
-              <button className="subscribe-btn" disabled={user?.id === channel.id}>
-                {user?.id === channel.id ? 'Your channel' : 'Subscribe'}
+              <button
+                className={`subscribe-btn ${subscribed ? 'subscribed' : ''}`}
+                disabled={user?.id === channel.id}
+                onClick={handleSubscribe}
+              >
+                {user?.id === channel.id ? 'Your channel' : (subscribed ? 'Subscribed' : 'Subscribe')}
               </button>
               <button className="join-btn">Join</button>
             </div>

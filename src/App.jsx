@@ -20,6 +20,7 @@ import Subscriptions from './pages/Subscriptions'
 import Studio from './pages/Studio'
 import Trending from './pages/Trending'
 import Library from './pages/Library'
+import Liked from './pages/Liked'
 import PlaylistDetail from './pages/PlaylistDetail'
 import Admin from './pages/Admin'
 import Diagnostics from './pages/Diagnostics'
@@ -52,6 +53,7 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
             <Route path="/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
+            <Route path="/liked" element={<ProtectedRoute><Liked /></ProtectedRoute>} />
             <Route path="/playlist/:id" element={<ProtectedRoute><PlaylistDetail /></ProtectedRoute>} />
             <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
             <Route path="/studio" element={<ProtectedRoute><Studio /></ProtectedRoute>} />

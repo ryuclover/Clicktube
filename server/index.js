@@ -25,24 +25,34 @@ app.use(compression()); // Compress all responses
 // Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 500, // limit each IP to 500 requests per windowMs (video feeds are chatty)
   message: 'Too many requests from this IP, please try again after 15 minutes'
 });
 app.use('/api', limiter);
 
+const allowedOrigins = [
+  env.FRONTEND_URL,
+  'https://clicktube-wine.vercel.app',
+  'https://clicktubeapp.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    env.FRONTEND_URL,
-    'https://clicktube-wine.vercel.app',
-    'https://clicktubeapp.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000'
-  ].filter(Boolean),
+  origin: (origin, callback) => {
+    // Allow same-origin / non-browser requests (no Origin header)
+    if (!origin) return callback(null, true);
+    // Allow exact matches + any Vercel preview deployment of this project
+    if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin ${origin}`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json({ limit: '10kb' })); // Body parser, limiting data size
+app.use(express.json({ limit: '100kb' })); // Body parser, limiting data size
 
 // Initialize MongoDB Connection
 connectDB();
