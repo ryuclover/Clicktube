@@ -3,12 +3,16 @@ const CloudinaryStorage = require('multer-storage-cloudinary').CloudinaryStorage
 const cloudinary = require('cloudinary').v2;
 const env = require('../config/env');
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: env.CLOUDINARY_CLOUD_NAME,
-  api_key: env.CLOUDINARY_API_KEY,
-  api_secret: env.CLOUDINARY_API_SECRET
-});
+// Configure Cloudinary (supports CLOUDINARY_URL or split credentials)
+if (process.env.CLOUDINARY_URL) {
+  cloudinary.config(process.env.CLOUDINARY_URL);
+} else {
+  cloudinary.config({
+    cloud_name: env.CLOUDINARY_CLOUD_NAME,
+    api_key: env.CLOUDINARY_API_KEY,
+    api_secret: env.CLOUDINARY_API_SECRET
+  });
+}
 
 // Set up CloudinaryStorage for avatars
 const uploadAvatarStorage = new CloudinaryStorage({
