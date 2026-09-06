@@ -1,6 +1,14 @@
 const mongoose = require('mongoose');
 
 let warnedOnce = false;
+let lastError = null;
+
+const getDbStatus = () => ({
+  state: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+  readyState: mongoose.connection.readyState,
+  host: mongoose.connection.host || null,
+  lastError,
+});
 
 const connectDB = async (retries = 5) => {
   const uri = process.env.MONGO_URI;
@@ -16,6 +24,13 @@ const connectDB = async (retries = 5) => {
       console.log(`MongoDB Conectado: ${conn.connection.host}`);
       return;
     } catch (error) {
+      lastError = {
+        message: error.message,
+        code: error.code || null,
+        reason: error.reason ? String(error.reason).slice(0, 300) : null,
+        attempt,
+        time: new Date().toISOString(),
+      };
       console.error(`Erro ao conectar ao MongoDB (tentativa ${attempt}/${retries}): ${error.message}`);
       if (attempt === retries) {
         // Do NOT exit: keep the HTTP server alive so /health keeps
@@ -33,3 +48,4 @@ const connectDB = async (retries = 5) => {
 };
 
 module.exports = connectDB;
+module.exports.getDbStatus = getDbStatus;

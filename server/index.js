@@ -60,18 +60,20 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'clicktube-api', time: new Date().toISOString() });
 });
 app.get('/health', (req, res) => {
-  const mongoose = require('mongoose');
+  const db = require('./config/db').getDbStatus();
   res.json({
     status: 'ok',
-    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    db: db.state,
+    dbDetail: db,
     time: new Date().toISOString()
   });
 });
 app.get('/api/health', (req, res) => {
-  const mongoose = require('mongoose');
+  const db = require('./config/db').getDbStatus();
   res.json({
     status: 'ok',
-    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    db: db.state,
+    dbDetail: db,
     time: new Date().toISOString()
   });
 });
