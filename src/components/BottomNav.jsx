@@ -14,7 +14,7 @@ const BottomNav = () => {
   ]
 
   return (
-    <nav className="bottom-nav glass show-mobile" aria-label="Mobile navigation">
+    <div className="bottom-nav glass show-mobile" role="navigation" aria-label="Mobile navigation">
       {navItems.map((item) => (
         <Link
           key={item.name}
