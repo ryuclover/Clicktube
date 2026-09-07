@@ -39,7 +39,7 @@ const Admin = () => {
     if (!window.confirm('Are you sure you want to delete this video? This action cannot be undone.')) return
 
     try {
-      await api.delete(`/videos/${id}`, { params: { userId: user.id } })
+      await api.delete(`/videos/${id}`)
       setVideos(videos.filter(v => v.id !== id))
       toast.success('Video removed from platform')
     } catch (err) {

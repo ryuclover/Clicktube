@@ -37,9 +37,7 @@ const Studio = () => {
     if (!window.confirm('Are you sure you want to delete this video?')) return
     const loadingToast = toast.loading('Deleting video...')
     try {
-      await api.delete(`/videos/${id}`, {
-        params: { userId: user.id }
-      })
+      await api.delete(`/videos/${id}`)
       setVideos(videos.filter(v => v.id !== id))
       toast.success('Video deleted successfully', { id: loadingToast })
     } catch (err) {

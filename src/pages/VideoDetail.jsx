@@ -33,47 +33,59 @@ const VideoDetail = () => {
   const menuRef = useRef(null)
 
   // Effect 1: Fetch video data, related videos, comments + increment view.
-  // BUG #12 FIX: Depends only on [id] — view is NOT re-counted when user logs in/out.
+  // P3: parallel fetches — video first, then profile/related/comments concurrently.
+  // Depends only on [id] — view is NOT re-counted when user logs in/out.
   useEffect(() => {
+    let cancelled = false
     const fetchVideoData = async () => {
       setLoading(true)
       try {
         const res = await api.get(`/videos/${id}`)
+        if (cancelled) return
         setVideo(res.data)
 
-        try {
-          const profileRes = await api.get(`/social/profile/${res.data.userId}`)
-          setUploaderSubscribers(profileRes.data.subscribers || 0)
-        } catch (profileErr) {
-          console.error('Error fetching uploader profile', profileErr)
+        const [profileRes, relatedRes, commentsRes] = await Promise.allSettled([
+          api.get(`/social/profile/${res.data.userId}`),
+          api.get('/videos', { params: { category: res.data.category, limit: 7 } }),
+          api.get(`/social/comments/${id}`),
+        ])
+        if (cancelled) return
+
+        if (profileRes.status === 'fulfilled') {
+          setUploaderSubscribers(profileRes.value.data.subscribers || 0)
+        } else {
+          console.error('Error fetching uploader profile', profileRes.reason)
         }
 
-        try {
-          const relatedRes = await api.get('/videos', {
-            params: { category: res.data.category, limit: 7 }
-          })
-          setRelatedVideos((relatedRes.data.videos || []).filter(v => v.id !== id))
-        } catch (relatedErr) {
-          console.error('Error fetching related videos', relatedErr)
+        if (relatedRes.status === 'fulfilled') {
+          setRelatedVideos(((relatedRes.value.data.videos || []).filter(v => v.id !== id)))
+        } else {
+          console.error('Error fetching related videos', relatedRes.reason)
         }
 
-        api.post(`/videos/${id}/view`)
+        if (commentsRes.status === 'fulfilled') {
+          const payload = commentsRes.value.data
+          setComments(payload.comments || payload)
+        } else {
+          console.error('Error fetching comments', commentsRes.reason)
+        }
 
-        const commentsRes = await api.get(`/social/comments/${id}`)
-        setComments(commentsRes.data)
+        api.post(`/videos/${id}/view`).catch(() => {})
       } catch (err) {
-        toast.error('Video not found or unavailable.')
+        if (!cancelled) toast.error('Video not found or unavailable.')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     fetchVideoData()
+    return () => { cancelled = true }
   }, [id])
 
   // Effect 2: Track watch history. Backend now uses upsert so safe to re-run.
+  // P3: identity comes from the auth cookie — no userId in body.
   useEffect(() => {
     if (!user) return
-    api.post('/social/history', { userId: user.id, videoId: id })
+    api.post('/social/history', { videoId: id }).catch(() => {})
   }, [id, user])
 
   // Effect 3: Check subscription when video owner or logged-in user changes.
@@ -91,7 +103,7 @@ const VideoDetail = () => {
   const handleLike = async (type) => {
     if (!user) return toast.error('Please login to like')
     try {
-      await api.post('/social/like', { videoId: id, userId: user.id, type })
+      await api.post('/social/like', { videoId: id, type })
       if (type === 'like') {
         setLiked(!liked)
         setDisliked(false)
@@ -174,7 +186,6 @@ const VideoDetail = () => {
     try {
       const res = await api.post('/social/comment', {
         videoId: id,
-        userId: user.id,
         text,
         parentId
       })

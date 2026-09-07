@@ -20,7 +20,7 @@ const Login = () => {
     const loadingToast = toast.loading('Logging in...')
     try {
       const res = await api.post('/auth/login', { email, password })
-      login(res.data.user, res.data.token)
+      login(res.data.user)
       toast.success(`Welcome back, ${res.data.user.username}!`, { id: loadingToast })
       navigate('/')
     } catch (err) {

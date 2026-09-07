@@ -21,7 +21,7 @@ const Register = () => {
     const loadingToast = toast.loading('Creating account...')
     try {
       const res = await api.post('/auth/register', { username, email, password })
-      login(res.data.user, res.data.token)
+      login(res.data.user)
       toast.success('Account created successfully!', { id: loadingToast })
       navigate('/')
     } catch (err) {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import api from '../api/api'
 import { Plus, Check, X } from 'lucide-react'
 import './PlaylistModal.css'
@@ -25,7 +26,7 @@ const PlaylistModal = ({ videoId, userId, onClose }) => {
       const res = await api.post(`/social/playlists/${playlistId}/video`, { videoId })
       setPlaylists(playlists.map(p => p.id === playlistId ? res.data : p))
     } catch (err) {
-      alert('Error updating playlist')
+      toast.error(err.response?.data?.message || 'Error updating playlist')
     }
   }
 
@@ -34,15 +35,15 @@ const PlaylistModal = ({ videoId, userId, onClose }) => {
     if (!newPlaylistName.trim()) return
     try {
       const res = await api.post(`/social/playlists`, {
-        userId,
         name: newPlaylistName,
         videoIds: [videoId]
       })
       setPlaylists([...playlists, res.data])
       setNewPlaylistName('')
       setShowCreate(false)
+      toast.success('Playlist created')
     } catch (err) {
-      alert('Error creating playlist')
+      toast.error(err.response?.data?.message || 'Error creating playlist')
     }
   }
 

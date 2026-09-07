@@ -8,7 +8,7 @@ import { getAvatarUrl } from '../utils/display'
 import './Profile.css'
 
 const Profile = () => {
-  const { user, token, login } = useContext(AuthContext)
+  const { user, login } = useContext(AuthContext)
   const [profile, setProfile] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
   const [username, setUsername] = useState('')
@@ -60,7 +60,7 @@ const Profile = () => {
       const result = await uploadAvatar(file, user.id)
       setAvatar(result.avatar)
       setProfile({ ...profile, profilePicture: result.avatar })
-      login({ ...user, avatar: result.avatar, profilePicture: result.avatar }, token)
+      login({ ...user, avatar: result.avatar, profilePicture: result.avatar })
       toast.success('Avatar updated!')
     } catch (error) {
       toast.error(error.response?.data?.message || 'Upload failed')
@@ -75,7 +75,7 @@ const Profile = () => {
     try {
       const res = await api.put(`/social/profile/${user.id}`, { username, bio, banner, language })
       setProfile(res.data)
-      login(res.data, token) // Update global user state
+      login(res.data) // Update global user state
       setIsEditing(false)
       toast.success('Profile updated!', { id: loadingToast })
     } catch {

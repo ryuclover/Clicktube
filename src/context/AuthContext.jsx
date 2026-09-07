@@ -2,25 +2,12 @@ import { createContext, useState, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
-const TOKEN_KEY = 'token';
+// P3: cookies (httpOnly) are the auth mechanism. Only the user profile
+// is cached in sessionStorage for fast rehydration — never tokens.
 const USER_KEY = 'user';
-const MIGRATION_KEY = 'auth_storage_migrated_v1';
 
-const getStoredToken = () => {
-  const sessionToken = sessionStorage.getItem(TOKEN_KEY);
-  if (sessionToken) return sessionToken;
-  if (sessionStorage.getItem(MIGRATION_KEY) === '1') return null;
-  return localStorage.getItem(TOKEN_KEY);
-};
-
-const getStoredUser = () => {
-  const sessionUser = sessionStorage.getItem(USER_KEY);
-  if (sessionUser) return sessionUser;
-  if (sessionStorage.getItem(MIGRATION_KEY) === '1') return null;
-  return localStorage.getItem(USER_KEY);
-};
 const parseStoredUser = () => {
-  const storedUser = getStoredUser();
+  const storedUser = sessionStorage.getItem(USER_KEY);
   if (!storedUser) return null;
   try {
     return JSON.parse(storedUser);
@@ -31,33 +18,12 @@ const parseStoredUser = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => parseStoredUser());
-  const [token, setToken] = useState(getStoredToken);
-
+  // One-time cleanup of legacy token copies from the Bearer era
   useEffect(() => {
-    if (sessionStorage.getItem(MIGRATION_KEY) === '1') return;
-
-    if (!sessionStorage.getItem(TOKEN_KEY)) {
-      const legacyToken = localStorage.getItem(TOKEN_KEY);
-      if (legacyToken) sessionStorage.setItem(TOKEN_KEY, legacyToken);
-    }
-
-    if (!sessionStorage.getItem(USER_KEY)) {
-      const legacyUser = localStorage.getItem(USER_KEY);
-      if (legacyUser) sessionStorage.setItem(USER_KEY, legacyUser);
-    }
-
-    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem('token');
+    localStorage.removeItem('token');
     localStorage.removeItem(USER_KEY);
-    sessionStorage.setItem(MIGRATION_KEY, '1');
   }, []);
-
-  useEffect(() => {
-    if (token) {
-      sessionStorage.setItem(TOKEN_KEY, token);
-    } else {
-      sessionStorage.removeItem(TOKEN_KEY);
-    }
-  }, [token]);
 
   useEffect(() => {
     if (user) {
@@ -67,10 +33,8 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  const login = (userData, userToken) => {
+  const login = (userData) => {
     setUser(userData);
-    // P0: cookies are primary auth; keep short-lived token copy only as fallback
-    if (userToken) setToken(userToken);
   };
 
   const logout = async () => {
@@ -81,15 +45,11 @@ export const AuthProvider = ({ children }) => {
       // ignore — clear local state regardless
     }
     setUser(null);
-    setToken(null);
-    sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token: null, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

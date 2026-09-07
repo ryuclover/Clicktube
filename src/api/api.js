@@ -9,16 +9,10 @@ const api = axios.create({
   withCredentials: true, // P0: send httpOnly auth cookies cross-origin
 });
 
-// P0: attach legacy Bearer token only if present (transition period);
-// cookies are the primary auth mechanism now.
+// P3: cookies are the auth mechanism — no Bearer tokens in storage.
+// Kept as a no-op passthrough so all requests share one place for headers.
 api.interceptors.request.use(
-  (cfg) => {
-    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-    if (token) {
-      cfg.headers.Authorization = `Bearer ${token}`;
-    }
-    return cfg;
-  },
+  (cfg) => cfg,
   (error) => {
     return Promise.reject(error);
   }
@@ -34,24 +28,19 @@ api.interceptors.response.use(
     const url = (original && original.url) || '';
     const isAuthRoute = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh');
 
-    // P0: silent refresh once on 401 (except auth routes themselves)
+    // P3: silent refresh once on 401 (except auth routes themselves).
+    // New access token arrives via httpOnly cookie — just retry the request.
     if (status === 401 && !original._retry && !isAuthRoute) {
       original._retry = true;
       try {
         if (!refreshing) {
           refreshing = api.post('/auth/refresh').finally(() => { refreshing = null; });
         }
-        const refreshRes = await refreshing;
-        if (refreshRes.data && refreshRes.data.token) {
-          sessionStorage.setItem('token', refreshRes.data.token);
-          original.headers.Authorization = `Bearer ${refreshRes.data.token}`;
-        }
+        await refreshing;
         return api(original);
       } catch (refreshErr) {
         // Refresh failed — clear session and redirect to login
-        sessionStorage.removeItem('token');
         sessionStorage.removeItem('user');
-        localStorage.removeItem('token');
         localStorage.removeItem('user');
         if (window.location.pathname !== '/login') window.location.href = '/login';
         return Promise.reject(refreshErr);
