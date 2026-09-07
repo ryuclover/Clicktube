@@ -49,8 +49,15 @@ const videoSchema = new mongoose.Schema({
   duration: {
     type: String,
     default: '0:00'
+  },
+  deletedAt: {
+    type: Date,
+    default: null
   }
 }, { timestamps: true });
+
+// P2: soft-delete filter support
+videoSchema.index({ deletedAt: 1 });
 
 // P1: feed indexes — filtered list, trending sort, text search
 videoSchema.index({ status: 1, category: 1, createdAt: -1 });

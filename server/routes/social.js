@@ -54,7 +54,8 @@ router.post('/comment', requireAuth, requireDb, async (req, res) => {
       return res.status(400).json({ code: 'VALIDATION_ERROR', message: 'videoId and text are required' });
     }
     const user = await User.findOne({ id: userId });
-    const video = await Video.findOne({ id: videoId });
+    const video = await Video.findOne({ id: videoId, deletedAt: null });
+    if (!video) return res.status(404).json({ code: 'NOT_FOUND', message: 'Video not found' });
 
     const newComment = new Comment({
       id: uuidv4(),
@@ -268,7 +269,7 @@ router.get('/history/:userId', requireAuth, requireOwnerOrAdmin, requireDb, asyn
     if (!entries.length) return res.json({ videos: [], total, page, totalPages: Math.ceil(total / limit) });
 
     const videoIds = entries.map((e) => e.videoId);
-    const videos = await Video.find({ id: { $in: videoIds } }).lean();
+    const videos = await Video.find({ id: { $in: videoIds }, deletedAt: null }).lean();
     const byId = new Map(videos.map((v) => [v.id, v]));
 
     const enriched = await Promise.all(
@@ -310,7 +311,7 @@ router.get('/liked/:userId', requireAuth, requireOwnerOrAdmin, requireDb, async 
     if (!likes.length) return res.json({ videos: [], total, page, totalPages: Math.ceil(total / limit) });
 
     const videoIds = likes.map((l) => l.videoId);
-    const videos = await Video.find({ id: { $in: videoIds } }).lean();
+    const videos = await Video.find({ id: { $in: videoIds }, deletedAt: null }).lean();
     const byId = new Map(videos.map((v) => [v.id, v]));
 
     const enriched = await Promise.all(
@@ -461,7 +462,7 @@ router.get('/playlists/detail/:id', requireDb, async (req, res) => {
     const playlist = await Playlist.findOne({ id: req.params.id }).lean();
     if (!playlist) return res.status(404).json({ message: 'Playlist not found' });
     
-    let videos = await Video.find({ id: { $in: playlist.videoIds } }).lean();
+    let videos = await Video.find({ id: { $in: playlist.videoIds }, deletedAt: null }).lean();
     
     videos = await Promise.all(videos.map(async (v) => {
       const uploader = await User.findOne({ id: v.uploaderId });

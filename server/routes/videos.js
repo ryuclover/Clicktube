@@ -43,7 +43,7 @@ router.get('/', optionalAuth, requireDb, async (req, res) => {
   try {
     const { category, sort, search, status, userId, withStats, page = 1, limit = 12 } = req.query;
 
-    let query = {};
+    let query = { deletedAt: null };
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
@@ -190,7 +190,8 @@ router.get('/suggestions', requireDb, async (req, res) => {
 
     const videos = await Video.find({
       title: { $regex: q, $options: 'i' },
-      status: 'public'
+      status: 'public',
+      deletedAt: null
     }).limit(10).select('title');
 
     res.json(videos.map(v => v.title));
@@ -210,6 +211,7 @@ router.get('/suggestions', requireDb, async (req, res) => {
 router.post(
   '/upload',
   requireAuth,
+  requireDb,
   uploadCloud.fields([{ name: 'video', maxCount: 1 }, { name: 'thumbnail', maxCount: 1 }]),
   async (req, res) => {
     try {
@@ -286,8 +288,8 @@ router.get('/:id', requireDb, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const video = await Video.findOne({ id }).lean();
-    if (!video) return res.status(404).json({ message: 'Video not found' });
+    const video = await Video.findOne({ id, deletedAt: null }).lean();
+    if (!video) return res.status(404).json({ code: 'NOT_FOUND', message: 'Video not found' });
 
     const uploader = await User.findOne({ id: video.uploaderId });
     const enriched = {
@@ -318,33 +320,29 @@ router.post('/:id/view', optionalAuth, requireDb, async (req, res) => {
   try {
     const { id } = req.params;
     const viewerId = req.user?.id;
+    // P2: 24h dedupe window — one counted view per viewer/day, anon by IP hash
+    const anonKey = viewerId || `ip:${(req.ip || req.headers['x-forwarded-for'] || 'unknown').toString().slice(0, 64)}`;
+    const dayBucket = new Date().toISOString().slice(0, 10);
+    const viewKey = `${anonKey}:${dayBucket}`;
 
-    if (viewerId) {
-      const updatedVideo = await Video.findOneAndUpdate(
-        { id, viewedBy: { $ne: viewerId } },
-        { $inc: { views: 1 }, $addToSet: { viewedBy: viewerId } },
-        { new: true }
-      );
+    const updatedVideo = await Video.findOneAndUpdate(
+      { id, deletedAt: null, viewedBy: { $ne: viewKey } },
+      { $inc: { views: 1 }, $addToSet: { viewedBy: viewKey } },
+      { new: true }
+    );
 
-      if (updatedVideo) {
-        return res.json({ success: true, views: updatedVideo.views });
-      }
-
-      const existingVideo = await Video.findOne({ id });
-      if (existingVideo) {
-        return res.json({ success: true, views: existingVideo.views });
-      }
-    } else {
-      const video = await Video.findOneAndUpdate({ id }, { $inc: { views: 1 } }, { new: true });
-
-      if (video) {
-        return res.json({ success: true, views: video.views });
-      }
+    if (updatedVideo) {
+      return res.json({ success: true, views: updatedVideo.views });
     }
 
-    res.status(404).json({ message: 'Video not found' });
+    const existingVideo = await Video.findOne({ id, deletedAt: null });
+    if (existingVideo) {
+      return res.json({ success: true, views: existingVideo.views });
+    }
+
+    res.status(404).json({ code: 'NOT_FOUND', message: 'Video not found' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ code: 'SERVER_ERROR', message: 'Server error' });
   }
 });
 
@@ -356,26 +354,29 @@ router.post('/:id/view', optionalAuth, requireDb, async (req, res) => {
  * BUG #5 FIX: userId now extracted from verified JWT (req.user.id),
  * not from an untrusted query string parameter.
  */
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth, requireDb, async (req, res) => {
   try {
     const { id } = req.params;
     const requesterId = req.user.id;
     const requesterRole = req.user.role;
 
-    const video = await Video.findOne({ id });
-    if (!video) return res.status(404).json({ message: 'Video not found' });
+    const video = await Video.findOne({ id, deletedAt: null });
+    if (!video) return res.status(404).json({ code: 'NOT_FOUND', message: 'Video not found' });
 
     const isOwner = video.uploaderId === requesterId;
     const isAdmin = requesterRole === 'admin';
 
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({ message: 'Unauthorized' });
+      return res.status(403).json({ code: 'FORBIDDEN', message: 'Unauthorized' });
     }
 
-    await Video.deleteOne({ id });
+    // P2: soft-delete — keeps likes/comments/history referential integrity
+    video.deletedAt = new Date();
+    video.status = 'private';
+    await video.save();
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ code: 'SERVER_ERROR', message: 'Server error' });
   }
 });
 
@@ -387,17 +388,17 @@ router.delete('/:id', requireAuth, async (req, res) => {
  * BUG #6 FIX: userId now extracted from verified JWT (req.user.id),
  * not from an untrusted request body.
  */
-router.put('/:id', requireAuth, uploadCloud.single('thumbnail'), async (req, res) => {
+router.put('/:id', requireAuth, requireDb, uploadCloud.single('thumbnail'), async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, category, status } = req.body;
     const requesterId = req.user.id;
 
-    const video = await Video.findOne({ id });
-    if (!video) return res.status(404).json({ message: 'Video not found' });
+    const video = await Video.findOne({ id, deletedAt: null });
+    if (!video) return res.status(404).json({ code: 'NOT_FOUND', message: 'Video not found' });
 
     if (video.uploaderId !== requesterId) {
-      return res.status(403).json({ message: 'Unauthorized' });
+      return res.status(403).json({ code: 'FORBIDDEN', message: 'Unauthorized' });
     }
 
     if (title) video.title = title;
