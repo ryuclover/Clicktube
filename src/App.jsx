@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Navbar from './components/Navbar'
@@ -7,25 +7,31 @@ import BottomNav from './components/BottomNav'
 import LoadingBar from './components/LoadingBar'
 import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
-import VideoDetail from './pages/VideoDetail'
-import SearchResults from './pages/SearchResults'
-import ChannelDetail from './pages/ChannelDetail'
-import CategoryResults from './pages/CategoryResults'
+import Trending from './pages/Trending'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import Upload from './pages/Upload'
-import Profile from './pages/Profile'
-import History from './pages/History'
-import Subscriptions from './pages/Subscriptions'
-import Studio from './pages/Studio'
-import Trending from './pages/Trending'
-import Library from './pages/Library'
-import Liked from './pages/Liked'
-import PlaylistDetail from './pages/PlaylistDetail'
-import Admin from './pages/Admin'
-import Diagnostics from './pages/Diagnostics'
 import NotFound from './pages/NotFound'
 import './App.css'
+
+// P1: code-split heavy routes — keeps initial bundle small
+const VideoDetail = lazy(() => import('./pages/VideoDetail'))
+const SearchResults = lazy(() => import('./pages/SearchResults'))
+const ChannelDetail = lazy(() => import('./pages/ChannelDetail'))
+const CategoryResults = lazy(() => import('./pages/CategoryResults'))
+const Upload = lazy(() => import('./pages/Upload'))
+const Profile = lazy(() => import('./pages/Profile'))
+const History = lazy(() => import('./pages/History'))
+const Subscriptions = lazy(() => import('./pages/Subscriptions'))
+const Studio = lazy(() => import('./pages/Studio'))
+const Library = lazy(() => import('./pages/Library'))
+const Liked = lazy(() => import('./pages/Liked'))
+const PlaylistDetail = lazy(() => import('./pages/PlaylistDetail'))
+const Admin = lazy(() => import('./pages/Admin'))
+const Diagnostics = lazy(() => import('./pages/Diagnostics'))
+
+const RouteFallback = () => (
+  <div className="loading-state" style={{ padding: '40px', textAlign: 'center' }}>Loading…</div>
+)
 
 function App() {
   return (
@@ -36,6 +42,7 @@ function App() {
         <Navbar />
         <Sidebar />
         <main className="main-content">
+          <Suspense fallback={<RouteFallback />}>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Home />} />
@@ -62,6 +69,7 @@ function App() {
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </main>
         <BottomNav />
       </div>

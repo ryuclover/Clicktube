@@ -6,6 +6,7 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const uploadAvatar = require('../middleware/uploadAvatar');
 const { requireAuth } = require('../middleware/auth');
+const { setAuthCookies, clearAuthCookies } = require('../config/tokens');
 const { getAvatarUrl, DEFAULT_AVATAR } = require('../utils/display');
 const env = require('../config/env');
 
@@ -54,8 +55,8 @@ router.post('/register', [
 
     await user.save();
 
-    const token = jwt.sign({ id: user.id, role: user.role }, env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, username, email, avatar: getAvatarUrl(user), profilePicture: user.profilePicture || getAvatarUrl(user), role: user.role } });
+    const { access } = setAuthCookies(res, { id: user.id, role: user.role });
+    res.json({ token: access, user: { id: user.id, username, email, avatar: getAvatarUrl(user), profilePicture: user.profilePicture || getAvatarUrl(user), role: user.role } });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -82,11 +83,41 @@ router.post('/login', [
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id, role: user.role }, env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, username: user.username, email: user.email, avatar: getAvatarUrl(user), profilePicture: user.profilePicture || getAvatarUrl(user), role: user.role } });
+    const { access } = setAuthCookies(res, { id: user.id, role: user.role });
+    res.json({ token: access, user: { id: user.id, username: user.username, email: user.email, avatar: getAvatarUrl(user), profilePicture: user.profilePicture || getAvatarUrl(user), role: user.role } });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
+});
+
+/**
+ * @route   POST /api/auth/refresh
+ * @desc    Rotate access token using httpOnly refresh cookie
+ * @access  Public (requires valid ct_refresh cookie)
+ */
+router.post('/refresh', (req, res) => {
+  const token = req.cookies && req.cookies.ct_refresh;
+  if (!token) return res.status(401).json({ code: 'UNAUTHORIZED', message: 'No refresh token' });
+  try {
+    const payload = jwt.verify(token, env.JWT_SECRET);
+    if (payload.typ !== 'refresh') {
+      return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Invalid refresh token' });
+    }
+    const { access } = setAuthCookies(res, { id: payload.id, role: payload.role });
+    return res.json({ token: access });
+  } catch {
+    return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Invalid or expired refresh token' });
+  }
+});
+
+/**
+ * @route   POST /api/auth/logout
+ * @desc    Clear auth cookies
+ * @access  Public
+ */
+router.post('/logout', (req, res) => {
+  clearAuthCookies(res);
+  res.json({ success: true });
 });
 
 /**

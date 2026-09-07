@@ -13,5 +13,7 @@ const subscriptionSchema = new mongoose.Schema({
 
 // Ensure a user can only subscribe to a channel once
 subscriptionSchema.index({ userId: 1, channelId: 1 }, { unique: true });
+// P1: subscriber counts per channel
+subscriptionSchema.index({ channelId: 1 });
 
 module.exports = mongoose.model('Subscription', subscriptionSchema);

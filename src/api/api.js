@@ -6,32 +6,60 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // P0: send httpOnly auth cookies cross-origin
 });
 
-// Add a request interceptor to include the JWT token
+// P0: attach legacy Bearer token only if present (transition period);
+// cookies are the primary auth mechanism now.
 api.interceptors.request.use(
-  (config) => {
+  (cfg) => {
     const token = sessionStorage.getItem('token') || localStorage.getItem('token');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      cfg.headers.Authorization = `Bearer ${token}`;
     }
-    return config;
+    return cfg;
   },
   (error) => {
     return Promise.reject(error);
   }
 );
 
+let refreshing = null;
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      // Token expired or invalid — clear session and redirect to login
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+  async (error) => {
+    const original = error.config;
+    const status = error.response && error.response.status;
+    const url = (original && original.url) || '';
+    const isAuthRoute = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh');
+
+    // P0: silent refresh once on 401 (except auth routes themselves)
+    if (status === 401 && !original._retry && !isAuthRoute) {
+      original._retry = true;
+      try {
+        if (!refreshing) {
+          refreshing = api.post('/auth/refresh').finally(() => { refreshing = null; });
+        }
+        const refreshRes = await refreshing;
+        if (refreshRes.data && refreshRes.data.token) {
+          sessionStorage.setItem('token', refreshRes.data.token);
+          original.headers.Authorization = `Bearer ${refreshRes.data.token}`;
+        }
+        return api(original);
+      } catch (refreshErr) {
+        // Refresh failed — clear session and redirect to login
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        if (window.location.pathname !== '/login') window.location.href = '/login';
+        return Promise.reject(refreshErr);
+      }
+    }
+
+    if (status === 401 && isAuthRoute) {
+      return Promise.reject(error);
     }
     return Promise.reject(error);
   }

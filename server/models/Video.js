@@ -52,4 +52,11 @@ const videoSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// P1: feed indexes — filtered list, trending sort, text search
+videoSchema.index({ status: 1, category: 1, createdAt: -1 });
+videoSchema.index({ status: 1, createdAt: -1 });
+videoSchema.index({ views: -1 });
+videoSchema.index({ uploaderId: 1, createdAt: -1 });
+videoSchema.index({ title: 'text', description: 'text' });
+
 module.exports = mongoose.model('Video', videoSchema);

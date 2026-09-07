@@ -45,9 +45,14 @@ const createNotification = async ({ userId, type, fromUser, videoId, message }) 
  * @body    {string} text - The comment text
  * @body    {string} parentId - (Optional) ID of the parent comment if it's a reply
  */
-router.post('/comment', async (req, res) => {
+router.post('/comment', requireAuth, requireDb, async (req, res) => {
   try {
-    const { videoId, userId, text, parentId } = req.body;
+    const { videoId, text, parentId } = req.body;
+    // P0: identity comes from verified JWT, never from body
+    const userId = req.user.id;
+    if (!videoId || !text || !text.trim()) {
+      return res.status(400).json({ code: 'VALIDATION_ERROR', message: 'videoId and text are required' });
+    }
     const user = await User.findOne({ id: userId });
     const video = await Video.findOne({ id: videoId });
 
@@ -106,9 +111,13 @@ router.get('/comments/:videoId', requireDb, async (req, res) => {
  * @body    {string} userId - The user ID
  * @body    {string} type - 'like' or 'dislike'
  */
-router.post('/like', async (req, res) => {
+router.post('/like', requireAuth, requireDb, async (req, res) => {
   try {
-    const { videoId, userId, type } = req.body;
+    const { videoId, type } = req.body;
+    const userId = req.user.id;
+    if (!videoId || !['like', 'dislike'].includes(type)) {
+      return res.status(400).json({ code: 'VALIDATION_ERROR', message: 'videoId and valid type are required' });
+    }
 
     // BUG #3 FIX: Check existing interaction before deciding action
     const existing = await Like.findOne({ videoId, userId });
@@ -201,9 +210,13 @@ router.get('/subscriptions/:userId', requireDb, async (req, res) => {
  * @body    {string} userId - The user ID
  * @body    {string} videoId - The video ID
  */
-router.post('/history', async (req, res) => {
+router.post('/history', requireAuth, requireDb, async (req, res) => {
   try {
-    const { userId, videoId } = req.body;
+    const { videoId } = req.body;
+    const userId = req.user.id;
+    if (!videoId) {
+      return res.status(400).json({ code: 'VALIDATION_ERROR', message: 'videoId is required' });
+    }
 
     // BUG #14 FIX: Use atomic upsert instead of delete+insert.
     // Prevents data loss if the server crashes between the two operations
@@ -307,9 +320,10 @@ router.get('/notifications/:userId', requireDb, async (req, res) => {
   }
 });
 
-router.put('/notifications/:id/read', async (req, res) => {
+router.put('/notifications/:id/read', requireAuth, requireDb, async (req, res) => {
   try {
-    await Notification.findOneAndUpdate({ id: req.params.id }, { read: true });
+    const updated = await Notification.findOneAndUpdate({ id: req.params.id, userId: req.user.id }, { read: true });
+    if (!updated) return res.status(404).json({ code: 'NOT_FOUND', message: 'Notification not found' });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -349,9 +363,13 @@ router.get('/profile/:userId', requireDb, async (req, res) => {
  * @body    {string} username - User username
  * @body    {string} banner - Channel banner URL
  */
-router.put('/profile/:userId', async (req, res) => {
+router.put('/profile/:userId', requireAuth, requireDb, async (req, res) => {
   try {
     const { userId } = req.params;
+    // P0: users can only edit their own profile (admins excepted)
+    if (req.user.id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({ code: 'FORBIDDEN', message: 'You can only edit your own profile' });
+    }
     const { bio, username, banner, language } = req.body;
     
     const updatedUser = await User.findOneAndUpdate(
@@ -379,9 +397,13 @@ router.put('/profile/:userId', async (req, res) => {
 });
 
 // Playlists
-router.post('/playlists', async (req, res) => {
+router.post('/playlists', requireAuth, requireDb, async (req, res) => {
   try {
-    const { userId, name, videoIds } = req.body;
+    const { name, videoIds } = req.body;
+    const userId = req.user.id;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ code: 'VALIDATION_ERROR', message: 'Playlist name is required' });
+    }
     const newPlaylist = new Playlist({
       id: uuidv4(),
       userId,
@@ -433,22 +455,24 @@ router.get('/playlists/detail/:id', requireDb, async (req, res) => {
   }
 });
 
-router.post('/playlists/:id/video', async (req, res) => {
+router.post('/playlists/:id/video', requireAuth, requireDb, async (req, res) => {
   try {
     const { id } = req.params;
     const { videoId } = req.body;
     const playlist = await Playlist.findOne({ id });
-    
-    if (playlist) {
-      if (playlist.videoIds.includes(videoId)) {
-        playlist.videoIds = playlist.videoIds.filter(vid => vid !== videoId);
-      } else {
-        playlist.videoIds.push(videoId);
-      }
-      await playlist.save();
-      return res.json(playlist);
+
+    if (!playlist) return res.status(404).json({ code: 'NOT_FOUND', message: 'Playlist not found' });
+    if (playlist.userId !== req.user.id) {
+      return res.status(403).json({ code: 'FORBIDDEN', message: 'You do not own this playlist' });
     }
-    res.status(404).json({ message: 'Playlist not found' });
+
+    if (playlist.videoIds.includes(videoId)) {
+      playlist.videoIds = playlist.videoIds.filter(vid => vid !== videoId);
+    } else {
+      playlist.videoIds.push(videoId);
+    }
+    await playlist.save();
+    return res.json(playlist);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

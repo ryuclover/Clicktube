@@ -75,36 +75,98 @@ router.get('/', optionalAuth, requireDb, async (req, res) => {
     let sortObj = { createdAt: -1 };
     if (sort === 'views') sortObj = { views: -1 };
 
-    const total = await Video.countDocuments(query);
-    let videos = await Video.find(query)
-      .sort(sortObj)
-      .skip(skip)
-      .limit(limitNum)
-      .lean();
+    // P1: single aggregation — match + lookup uploader + optional stats.
+    // Eliminates N+1 (was 1 User.findOne per video + counts per video).
+    const match = { ...query };
+    // Text search via $text when available is faster than regex; keep regex
+    // fallback for partial matches. Use regex here but indexed prefix fields.
+    const pipeline = [
+      { $match: match },
+      { $sort: sortObj },
+      { $skip: skip },
+      { $limit: limitNum },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'uploaderId',
+          foreignField: 'id',
+          as: 'uploader',
+        },
+      },
+      { $unwind: { path: '$uploader', preserveNullAndEmptyArrays: true } },
+    ];
 
-    videos = await Promise.all(videos.map(async (v) => {
-      const uploader = await User.findOne({ id: v.uploaderId });
+    if (withStats === 'true') {
+      pipeline.push(
+        {
+          $lookup: {
+            from: 'likes',
+            let: { vid: '$id' },
+            pipeline: [
+              { $match: { $expr: { $and: [{ $eq: ['$videoId', '$$vid'] }, { $eq: ['$type', 'like'] }] } } },
+              { $count: 'n' },
+            ],
+            as: 'likeAgg',
+          },
+        },
+        {
+          $lookup: {
+            from: 'comments',
+            let: { vid: '$id' },
+            pipeline: [
+              { $match: { $expr: { $eq: ['$videoId', '$$vid'] } } },
+              { $count: 'n' },
+            ],
+            as: 'commentAgg',
+          },
+        },
+      );
+    }
 
-      let extraStats = {};
-      if (withStats === 'true') {
-        const [likeCount, commentCount] = await Promise.all([
-          Like.countDocuments({ videoId: v.id, type: 'like' }),
-          Comment.countDocuments({ videoId: v.id })
-        ]);
-        extraStats = { likeCount, commentCount };
-      }
-
-      return {
-        ...v,
-        userId: v.uploaderId,
-        channel: uploader ? uploader.username : 'Unknown',
-        channelAvatar: getAvatarUrl(uploader),
-        viewsCount: v.views,
-        views: `${v.views} views`,
-        timestamp: formatDateBR(v.createdAt),
+    pipeline.push({
+      $project: {
+        _id: 0,
+        id: 1,
+        title: 1,
+        description: 1,
+        url: 1,
+        thumbnail: 1,
+        uploaderId: 1,
+        views: 1,
+        category: 1,
+        tags: 1,
+        status: 1,
+        duration: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        userId: '$uploaderId',
+        channel: { $ifNull: ['$uploader.username', 'Unknown'] },
+        channelAvatar: {
+          $ifNull: [
+            '$uploader.profilePicture',
+            { $ifNull: ['$uploader.avatar', '/assets/default-avatar.svg'] },
+          ],
+        },
+        viewsCount: '$views',
         likes: 0,
-        ...extraStats
-      };
+        likeCount: {
+          $cond: [{ $eq: [withStats, 'true'] }, { $ifNull: [{ $arrayElemAt: ['$likeAgg.n', 0] }, 0] }, '$$REMOVE'],
+        },
+        commentCount: {
+          $cond: [{ $eq: [withStats, 'true'] }, { $ifNull: [{ $arrayElemAt: ['$commentAgg.n', 0] }, 0] }, '$$REMOVE'],
+        },
+      },
+    });
+
+    const [total, aggVideos] = await Promise.all([
+      Video.countDocuments(query),
+      Video.aggregate(pipeline),
+    ]);
+
+    const videos = aggVideos.map((v) => ({
+      ...v,
+      views: `${v.views} views`,
+      timestamp: formatDateBR(v.createdAt),
     }));
 
     res.json({ videos, total, page: pageNum, totalPages: Math.ceil(total / limitNum) });

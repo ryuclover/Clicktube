@@ -2,19 +2,25 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle } from 'lucide-react'
 import { formatViews } from '../utils/format'
-import { getAvatarUrl } from '../utils/display'
+import { getAvatarUrl, getThumbnailUrl } from '../utils/display'
 import './VideoCard.css'
 
 const VideoCard = ({ video, layout = 'vertical' }) => {
   return (
     <div className={`video-card ${layout} fade-in`}>
       <Link to={`/video/${video.id}`} className="thumbnail-container">
-        <img src={video.thumbnail} alt={video.title} className="thumbnail" />
+        <img
+          src={getThumbnailUrl(video.thumbnail, layout === 'horizontal' ? 480 : 640)}
+          alt={video.title}
+          className="thumbnail"
+          loading="lazy"
+          decoding="async"
+        />
         <span className="duration">{video.duration || '0:00'}</span>
       </Link>
       <div className="video-info">
         <Link to={`/channel/${video.userId}`} className="channel-avatar">
-          <img src={getAvatarUrl(video.channelAvatar)} alt={video.channel} onError={(e) => { e.target.src = '/assets/default-avatar.svg' }} />
+          <img src={getAvatarUrl(video.channelAvatar)} alt={video.channel} loading="lazy" decoding="async" onError={(e) => { e.target.src = '/assets/default-avatar.svg' }} />
         </Link>
         <div className="text-info">
           <Link to={`/video/${video.id}`}>

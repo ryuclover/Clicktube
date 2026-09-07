@@ -69,10 +69,17 @@ export const AuthProvider = ({ children }) => {
 
   const login = (userData, userToken) => {
     setUser(userData);
-    setToken(userToken);
+    // P0: cookies are primary auth; keep short-lived token copy only as fallback
+    if (userToken) setToken(userToken);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      const api = (await import('../api/api')).default;
+      await api.post('/auth/logout');
+    } catch {
+      // ignore — clear local state regardless
+    }
     setUser(null);
     setToken(null);
     sessionStorage.removeItem(TOKEN_KEY);

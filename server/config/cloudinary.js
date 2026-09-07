@@ -19,13 +19,29 @@ if (process.env.CLOUDINARY_URL) {
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
+    const isVideo = file.mimetype.startsWith('video/');
     return {
-      folder: 'clicktube',
-      resource_type: 'auto',
+      folder: isVideo ? 'clicktube/videos' : 'clicktube/thumbnails',
+      resource_type: isVideo ? 'video' : 'image',
+      ...(isVideo ? {} : { transformation: [{ width: 1280, crop: 'limit', quality: 'auto', fetch_format: 'auto' }] }),
     };
   }
 });
 
-const uploadCloud = multer({ storage });
+const VIDEO_MIMES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'];
+const IMAGE_MIMES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+const uploadCloud = multer({
+  storage,
+  limits: {
+    fileSize: 200 * 1024 * 1024, // 200MB per file (Render free + Cloudinary free friendly)
+    files: 2, // video + thumbnail
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.fieldname === 'video' && VIDEO_MIMES.includes(file.mimetype)) return cb(null, true);
+    if (file.fieldname === 'thumbnail' && IMAGE_MIMES.includes(file.mimetype)) return cb(null, true);
+    cb(new Error(`Invalid file type for ${file.fieldname}: ${file.mimetype}`));
+  },
+});
 
 module.exports = { cloudinary, uploadCloud };

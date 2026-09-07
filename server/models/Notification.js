@@ -33,4 +33,7 @@ const notificationSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// P1: inbox reads newest-first
+notificationSchema.index({ userId: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Notification', notificationSchema);

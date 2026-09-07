@@ -33,4 +33,7 @@ const commentSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// P1: comment thread reads
+commentSchema.index({ videoId: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Comment', commentSchema);
