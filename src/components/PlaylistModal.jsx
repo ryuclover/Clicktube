@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
 import api from '../api/api'
 import { Plus, Check, X } from 'lucide-react'
@@ -8,6 +8,14 @@ const PlaylistModal = ({ videoId, userId, onClose }) => {
   const [playlists, setPlaylists] = useState([])
   const [newPlaylistName, setNewPlaylistName] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const dialogRef = useRef(null)
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    dialogRef.current?.querySelector('input, button')?.focus()
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   useEffect(() => {
     const fetchPlaylists = async () => {
@@ -48,11 +56,11 @@ const PlaylistModal = ({ videoId, userId, onClose }) => {
   }
 
   return (
-    <div className="modal-overlay">
-      <div className="playlist-modal glass fade-in">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="playlist-modal glass fade-in" role="dialog" aria-modal="true" aria-label="Save to playlist" ref={dialogRef} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>Save to...</h3>
-          <button className="close-btn" onClick={onClose}><X size={20} /></button>
+          <button className="close-btn" onClick={onClose} aria-label="Close dialog"><X size={20} /></button>
         </div>
         
         <div className="playlist-list">

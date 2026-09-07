@@ -12,6 +12,13 @@ const EditVideoModal = ({ video, onClose, onUpdate, userId }) => {
   const [thumbnailPreview, setThumbnailPreview] = useState(video.thumbnail || '')
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef(null)
+  const dialogRef = useRef(null)
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   useEffect(() => {
     setTitle(video.title)
@@ -67,8 +74,8 @@ const EditVideoModal = ({ video, onClose, onUpdate, userId }) => {
   }
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content glass fade-in">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content glass fade-in" role="dialog" aria-modal="true" aria-label="Edit video details" ref={dialogRef} onClick={(e) => e.stopPropagation()}>
         <h2>Edit Video Details</h2>
         <form onSubmit={handleSave}>
           <div className="form-group">

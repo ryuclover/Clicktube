@@ -1,11 +1,12 @@
-import React, { Suspense, lazy } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import React, { Suspense, lazy, useContext } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import BottomNav from './components/BottomNav'
 import LoadingBar from './components/LoadingBar'
 import ProtectedRoute from './components/ProtectedRoute'
+import { AuthContext } from './context/AuthContext'
 import Home from './pages/Home'
 import Trending from './pages/Trending'
 import Login from './pages/Login'
@@ -33,6 +34,15 @@ const RouteFallback = () => (
   <div className="loading-state" style={{ padding: '40px', textAlign: 'center' }}>Loading…</div>
 )
 
+// P3: diagnostics exposes backend internals — admin only in production
+const AdminDiagnostics = () => {
+  const { user } = useContext(AuthContext)
+  if (import.meta.env.PROD && (!user || user.role !== 'admin')) {
+    return <Navigate to="/" replace />
+  }
+  return <Diagnostics />
+}
+
 function App() {
   return (
     <Router>
@@ -53,7 +63,7 @@ function App() {
             <Route path="/channel/:id" element={<ChannelDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/diagnostics" element={<Diagnostics />} />
+            <Route path="/diagnostics" element={<AdminDiagnostics />} />
 
             {/* Protected routes */}
             <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />

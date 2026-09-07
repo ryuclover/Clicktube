@@ -22,7 +22,7 @@ const Sidebar = () => {
   const location = useLocation()
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" aria-label="Sidebar navigation">
       <div className="sidebar-content">
         {categories.map((item, index) => (
           item.type === 'divider' ? (

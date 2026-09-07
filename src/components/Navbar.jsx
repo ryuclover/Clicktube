@@ -61,9 +61,9 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="navbar glass">
+    <nav className="navbar glass" aria-label="Main navigation">
       <div className="nav-left">
-        <button className="icon-btn menu-btn">
+        <button className="icon-btn menu-btn" aria-label="Open menu">
           <Menu size={20} />
         </button>
         <Link to="/" className="logo">
@@ -84,7 +84,7 @@ const Navbar = () => {
             }}
             onFocus={() => setShowSuggestions(true)}
           />
-          <button type="submit" className="search-btn">
+          <button type="submit" className="search-btn" aria-label="Search">
             <Search size={18} />
           </button>
         </form>
@@ -105,7 +105,7 @@ const Navbar = () => {
       </div>
 
       <div className="nav-right">
-        <button className="icon-btn theme-toggle" onClick={toggleTheme} title="Toggle Theme">
+        <button className="icon-btn theme-toggle" onClick={toggleTheme} title="Toggle Theme" aria-label="Toggle theme">
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>
         {user ? (
@@ -119,7 +119,7 @@ const Navbar = () => {
               <Upload size={20} />
             </Link>
             <div className="notification-wrapper">
-              <button className="icon-btn hide-mobile" onClick={() => setShowNotifications(!showNotifications)}>
+              <button className="icon-btn hide-mobile" onClick={() => setShowNotifications(!showNotifications)} aria-label="Notifications" aria-expanded={showNotifications}>
                 <Bell size={20} />
               </button>
               {showNotifications && (
@@ -130,7 +130,7 @@ const Navbar = () => {
               <Link to="/profile">
                 <img src={getAvatarUrl(user)} alt={user.username} className="nav-avatar" onError={(e) => { e.target.src = '/assets/default-avatar.svg' }} />
               </Link>
-              <button className="logout-btn" onClick={logout} title="Logout">
+              <button className="logout-btn" onClick={logout} title="Logout" aria-label="Log out">
                 <LogOut size={18} />
               </button>
             </div>
