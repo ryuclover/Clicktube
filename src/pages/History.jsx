@@ -65,7 +65,8 @@ const History = () => {
               Load more
             </button>
           )}
-        </> : (
+        </>
+      ) : (
         <p className="empty-message">You haven't watched any videos yet.</p>
       )}
     </div>
