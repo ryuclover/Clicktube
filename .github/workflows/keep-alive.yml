@@ -2,13 +2,20 @@ name: keep-alive
 
 on:
   schedule:
-    # Every 6 hours — touches /api/ping so Atlas M0 doesn't auto-pause
-    # and Render free tier doesn't sleep too long.
-    - cron: '0 */6 * * *'
+    # Light ping every 6 hours — wakes Render + touches Atlas M0
+    - cron: '17 */6 * * *'
+    # Deep traffic simulation every 2 days — realistic reads across
+    # collections so Atlas never sees "prolonged inactivity"
+    - cron: '23 3 */2 * *'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Which simulation to run (light, deep, all)'
+        default: 'all'
 
 jobs:
   ping:
+    if: github.event.inputs.mode == '' || github.event.inputs.mode == 'all' || github.event.inputs.mode == 'light'
     runs-on: ubuntu-latest
     steps:
       - name: Ping backend (wake Atlas + Render)
@@ -17,3 +24,47 @@ jobs:
           curl -fsS --max-time 90 https://clicktube-api.onrender.com/api/ping || echo "ping failed (cold start?)"
           echo "Pinging frontend ..."
           curl -fsS --max-time 60 -o /dev/null https://clicktubeapp.vercel.app/ || echo "frontend ping failed"
+
+  simulate-traffic:
+    if: github.event.inputs.mode == '' || github.event.inputs.mode == 'all' || github.event.inputs.mode == 'deep'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Realistic traffic simulation (Atlas anti-pause)
+        run: |
+          BASE="https://clicktube-api.onrender.com"
+          echo "=== 1. Warmup: health + ping ==="
+          curl -fsS --max-time 90 "$BASE/api/ping" || true
+          curl -fsS --max-time 60 "$BASE/health" || true
+
+          echo "=== 2. Feed reads (home/trending/categories) ==="
+          curl -fsS --max-time 60 "$BASE/api/videos?limit=6&page=1" -o /tmp/v1.json || true
+          curl -fsS --max-time 60 "$BASE/api/videos?sort=views&limit=6" -o /dev/null || true
+          for CAT in Music Gaming Sports React; do
+            curl -fsS --max-time 60 "$BASE/api/videos?category=$CAT&limit=4" -o /dev/null || true
+          done
+
+          echo "=== 3. Search + suggestions (touches text indexes) ==="
+          for Q in a e music game react; do
+            curl -fsS --max-time 60 "$BASE/api/videos?search=$Q&limit=3" -o /dev/null || true
+            curl -fsS --max-time 60 "$BASE/api/videos/suggestions?q=$Q" -o /dev/null || true
+          done
+
+          echo "=== 4. Detail reads (video + comments + profile) ==="
+          VID=$(python3 -c "import json; d=json.load(open('/tmp/v1.json')); v=(d.get('videos') or [{}])[0]; print(v.get('id',''))" 2>/dev/null || echo "")
+          if [ -n "$VID" ]; then
+            echo "Using video $VID"
+            curl -fsS --max-time 60 "$BASE/api/videos/$VID" -o /tmp/v.json || true
+            curl -fsS --max-time 60 "$BASE/api/social/comments/$VID" -o /dev/null || true
+            UID=$(python3 -c "import json; print(json.load(open('/tmp/v.json')).get('userId',''))" 2>/dev/null || echo "")
+            if [ -n "$UID" ]; then
+              curl -fsS --max-time 60 "$BASE/api/social/profile/$UID" -o /dev/null || true
+              curl -fsS --max-time 60 "$BASE/api/videos?userId=$UID&limit=3" -o /dev/null || true
+            fi
+          else
+            echo "No video id found, skipping detail reads"
+          fi
+
+          echo "=== 5. Frontend warmup ==="
+          curl -fsS --max-time 60 -o /dev/null https://clicktubeapp.vercel.app/ || true
+          curl -fsS --max-time 60 -o /dev/null https://clicktubeapp.vercel.app/trending || true
+          echo "Simulation done."
