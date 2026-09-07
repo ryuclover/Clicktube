@@ -9,21 +9,34 @@ import './History.css'
 const History = () => {
   const { user } = useContext(AuthContext)
   const [history, setHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [total, setTotal] = useState(0)
 
   useEffect(() => {
     if (user) {
       const fetchHistory = async () => {
         if (config.mode === 'mock') return
         try {
-          const res = await api.get(`/social/history/${user.id}`)
-          setHistory(res.data)
+          const res = await api.get(`/social/history/${user.id}`, { params: { page, limit: 20 } })
+          const data = res.data.videos || res.data
+          setHistory(prev => page === 1 ? data : [...prev, ...data])
+          setHasMore(data.length === 20)
+          setTotal(res.data.total || data.length)
         } catch (err) {
           console.error(err)
+        } finally {
+          setLoading(false)
         }
       }
       fetchHistory()
     }
-  }, [user])
+  }, [user, page])
+
+  const loadMore = () => {
+    if (!loading && hasMore) setPage(p => p + 1)
+  }
 
   if (!user) return <div className="auth-message">Please login to view your history.</div>
 
@@ -34,15 +47,25 @@ const History = () => {
         <h1>Watch History</h1>
       </div>
       
-      {history.length > 0 ? (
+      {loading ? (
         <div className="history-grid">
-          {history.map((video, index) => (
-            <div key={`${video.id}-${index}`} className="history-item">
-              <VideoCard video={video} />
-            </div>
-          ))}
+          {Array(8).fill(0).map((_, i) => <div key={i} className="history-item"><SkeletonCard /></div>)}
         </div>
-      ) : (
+      ) : history.length > 0 ? (
+        <>
+          <div className="history-grid">
+            {history.map((video, index) => (
+              <div key={`${video.id}-${index}`} className="history-item">
+                <VideoCard video={video} />
+              </div>
+            ))}
+          </div>
+          {hasMore && (
+            <button className="load-more-btn" onClick={loadMore}>
+              Load more
+            </button>
+          )}
+        </> : (
         <p className="empty-message">You haven't watched any videos yet.</p>
       )}
     </div>

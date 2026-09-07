@@ -91,14 +91,21 @@ router.post('/comment', requireAuth, requireDb, async (req, res) => {
 
 router.get('/comments/:videoId', requireDb, async (req, res) => {
   try {
-    const comments = await Comment.find({ videoId: req.params.videoId }).sort({ createdAt: -1 }).lean();
-    res.json(comments.map((comment) => ({
+    const { page, limit, skip } = getPagination(req, 20, 100);
+    const [comments, total] = await Promise.all([
+      Comment.find({ videoId: req.params.videoId }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Comment.countDocuments({ videoId: req.params.videoId }),
+    ]);
+    const items = comments.map((comment) => ({
       ...comment,
       avatar: getAvatarUrl(comment.avatar),
       timestamp: formatDateBR(comment.createdAt)
-    })));
+    }));
+    // Back-compat: plain array when no pagination params given
+    if (!req.query.page && !req.query.limit) return res.json(items);
+    res.json({ comments: items, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ code: 'SERVER_ERROR', message: 'Server error' });
   }
 });
 
@@ -188,7 +195,20 @@ router.post('/subscribe', requireAuth, async (req, res) => {
   }
 });
 
-router.get('/subscriptions/:userId', requireDb, async (req, res) => {
+const requireOwnerOrAdmin = (req, res, next) => {
+  if (req.user.id !== req.params.userId && req.user.role !== 'admin') {
+    return res.status(403).json({ code: 'FORBIDDEN', message: 'You can only access your own data' });
+  }
+  next();
+};
+
+const getPagination = (req, def = 20, max = 50) => {
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(max, Math.max(1, parseInt(req.query.limit, 10) || def));
+  return { page, limit, skip: (page - 1) * limit };
+};
+
+router.get('/subscriptions/:userId', requireAuth, requireOwnerOrAdmin, requireDb, async (req, res) => {
   try {
     const userSubs = await Subscription.find({ userId: req.params.userId });
     const subscribedChannels = await Promise.all(userSubs.map(async (sub) => {
@@ -197,7 +217,7 @@ router.get('/subscriptions/:userId', requireDb, async (req, res) => {
     }));
     res.json(subscribedChannels.filter(Boolean));
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ code: 'SERVER_ERROR', message: 'Server error' });
   }
 });
 
@@ -238,12 +258,14 @@ router.post('/history', requireAuth, requireDb, async (req, res) => {
  * @desc    Get enriched watch history for a user (newest first)
  * @access  Public (frontend guards the page behind login)
  */
-router.get('/history/:userId', requireDb, async (req, res) => {
+router.get('/history/:userId', requireAuth, requireOwnerOrAdmin, requireDb, async (req, res) => {
   try {
-    const entries = await History.find({ userId: req.params.userId })
-      .sort({ watchedAt: -1 })
-      .lean();
-    if (!entries.length) return res.json([]);
+    const { page, limit, skip } = getPagination(req);
+    const [entries, total] = await Promise.all([
+      History.find({ userId: req.params.userId }).sort({ watchedAt: -1 }).skip(skip).limit(limit).lean(),
+      History.countDocuments({ userId: req.params.userId }),
+    ]);
+    if (!entries.length) return res.json({ videos: [], total, page, totalPages: Math.ceil(total / limit) });
 
     const videoIds = entries.map((e) => e.videoId);
     const videos = await Video.find({ id: { $in: videoIds } }).lean();
@@ -266,23 +288,26 @@ router.get('/history/:userId', requireDb, async (req, res) => {
         };
       })
     );
-    res.json(enriched.filter(Boolean));
+    const videosOut = enriched.filter(Boolean);
+    res.json({ videos: videosOut, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ code: 'SERVER_ERROR', message: 'Server error' });
   }
 });
 
 /**
  * @route   GET /api/social/liked/:userId
  * @desc    Get videos liked by a user (newest likes first)
- * @access  Public (frontend guards the page behind login)
+ * @access  Private (owner or admin)
  */
-router.get('/liked/:userId', requireDb, async (req, res) => {
+router.get('/liked/:userId', requireAuth, requireOwnerOrAdmin, requireDb, async (req, res) => {
   try {
-    const likes = await Like.find({ userId: req.params.userId, type: 'like' })
-      .sort({ createdAt: -1 })
-      .lean();
-    if (!likes.length) return res.json([]);
+    const { page, limit, skip } = getPagination(req);
+    const [likes, total] = await Promise.all([
+      Like.find({ userId: req.params.userId, type: 'like' }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Like.countDocuments({ userId: req.params.userId, type: 'like' }),
+    ]);
+    if (!likes.length) return res.json({ videos: [], total, page, totalPages: Math.ceil(total / limit) });
 
     const videoIds = likes.map((l) => l.videoId);
     const videos = await Video.find({ id: { $in: videoIds } }).lean();
@@ -304,19 +329,24 @@ router.get('/liked/:userId', requireDb, async (req, res) => {
         };
       })
     );
-    res.json(enriched.filter(Boolean));
+    const likedOut = enriched.filter(Boolean);
+    res.json({ videos: likedOut, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ code: 'SERVER_ERROR', message: 'Server error' });
   }
 });
 
 // Notifications
-router.get('/notifications/:userId', requireDb, async (req, res) => {
+router.get('/notifications/:userId', requireAuth, requireOwnerOrAdmin, requireDb, async (req, res) => {
   try {
-    const userNotifications = await Notification.find({ userId: req.params.userId }).sort({ createdAt: -1 });
-    res.json(userNotifications);
+    const { page, limit, skip } = getPagination(req);
+    const [userNotifications, total] = await Promise.all([
+      Notification.find({ userId: req.params.userId }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Notification.countDocuments({ userId: req.params.userId }),
+    ]);
+    res.json({ notifications: userNotifications, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ code: 'SERVER_ERROR', message: 'Server error' });
   }
 });
 
@@ -417,12 +447,12 @@ router.post('/playlists', requireAuth, requireDb, async (req, res) => {
   }
 });
 
-router.get('/playlists/:userId', requireDb, async (req, res) => {
+router.get('/playlists/:userId', requireAuth, requireOwnerOrAdmin, requireDb, async (req, res) => {
   try {
     const userPlaylists = await Playlist.find({ userId: req.params.userId });
     res.json(userPlaylists);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ code: 'SERVER_ERROR', message: 'Server error' });
   }
 });
 

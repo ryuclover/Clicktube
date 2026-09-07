@@ -19,11 +19,14 @@ const Library = () => {
       const fetchLibraryData = async () => {
         try {
           const [historyRes, playlistsRes] = await Promise.all([
-            api.get(`/social/history/${user.id}`),
+            api.get(`/social/history/${user.id}`, { params: { limit: 8 } }),
             api.get(`/social/playlists/${user.id}`)
           ])
-          setHistory(historyRes.data.slice(0, 8)) // Only show recent 8
-          setPlaylists(playlistsRes.data)
+          // Handle both old array format and new paginated format
+          const historyData = historyRes.data.videos || historyRes.data
+          const playlistsData = playlistsRes.data.playlists || playlistsRes.data
+          setHistory(historyData.slice(0, 8)) // Only show recent 8
+          setPlaylists(playlistsData)
         } catch (err) {
           console.error(err)
         } finally {

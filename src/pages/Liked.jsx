@@ -10,6 +10,9 @@ const Liked = () => {
   const { user } = useContext(AuthContext)
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [total, setTotal] = useState(0)
 
   useEffect(() => {
     if (!user) {
@@ -18,8 +21,11 @@ const Liked = () => {
     }
     const fetchLiked = async () => {
       try {
-        const res = await api.get(`/social/liked/${user.id}`)
-        setVideos(res.data || [])
+        const res = await api.get(`/social/liked/${user.id}`, { params: { page, limit: 20 } })
+        const data = res.data.videos || res.data
+        setVideos(prev => page === 1 ? data : [...prev, ...data])
+        setHasMore(data.length === 20)
+        setTotal(res.data.total || data.length)
       } catch (err) {
         console.error('Failed to fetch liked videos', err)
       } finally {
@@ -27,7 +33,11 @@ const Liked = () => {
       }
     }
     fetchLiked()
-  }, [user])
+  }, [user, page])
+
+  const loadMore = () => {
+    if (!loading && hasMore) setPage(p => p + 1)
+  }
 
   if (!user) return <div className="auth-message">Please login to view your liked videos.</div>
 
@@ -43,13 +53,20 @@ const Liked = () => {
           {Array(8).fill(0).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : videos.length > 0 ? (
-        <div className="history-grid">
-          {videos.map((video, index) => (
-            <div key={`${video.id}-liked-${index}`} className="history-item">
-              <VideoCard video={video} />
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="history-grid">
+            {videos.map((video, index) => (
+              <div key={`${video.id}-liked-${index}`} className="history-item">
+                <VideoCard video={video} />
+              </div>
+            ))}
+          </div>
+          {hasMore && (
+            <button className="load-more-btn" onClick={() => setPage(p => p + 1)}>
+              Load more
+            </button>
+          )}
+        </>
       ) : (
         <p className="empty-message">You haven&apos;t liked any videos yet.</p>
       )}
