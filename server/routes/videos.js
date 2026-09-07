@@ -123,6 +123,8 @@ router.get('/', optionalAuth, requireDb, async (req, res) => {
       );
     }
 
+    const withStatsFlag = withStats === 'true';
+
     pipeline.push({
       $project: {
         _id: 0,
@@ -148,13 +150,13 @@ router.get('/', optionalAuth, requireDb, async (req, res) => {
           ],
         },
         viewsCount: '$views',
-        likes: 0,
-        likeCount: {
-          $cond: [{ $eq: [withStats, 'true'] }, { $ifNull: [{ $arrayElemAt: ['$likeAgg.n', 0] }, 0] }, '$$REMOVE'],
-        },
-        commentCount: {
-          $cond: [{ $eq: [withStats, 'true'] }, { $ifNull: [{ $arrayElemAt: ['$commentAgg.n', 0] }, 0] }, '$$REMOVE'],
-        },
+        likes: { $literal: 0 },
+        ...(withStatsFlag
+          ? {
+              likeCount: { $ifNull: [{ $arrayElemAt: ['$likeAgg.n', 0] }, 0] },
+              commentCount: { $ifNull: [{ $arrayElemAt: ['$commentAgg.n', 0] }, 0] },
+            }
+          : {}),
       },
     });
 
