@@ -3,13 +3,13 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
+  min-height: 60px;
   display: none; /* Hidden by default, shown via media queries */
   justify-content: space-around;
   align-items: center;
   z-index: 1000;
   border-top: 1px solid var(--border-color);
-  padding: 0 10px;
+  padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px));
 }
 
 .bottom-nav-item {

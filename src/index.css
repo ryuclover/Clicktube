@@ -103,9 +103,24 @@ button {
 
 .main-content {
   grid-area: main;
-  padding: 24px;
+  padding: clamp(12px, 2.5vw, 24px);
   overflow-y: auto;
   height: calc(100vh - var(--nav-height));
+  height: calc(100dvh - var(--nav-height));
+  max-width: 2200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Touch targets: minimum 44px for mobile */
+@media (pointer: coarse) {
+  button, .icon-btn, .category-pill, .bottom-nav-item {
+    min-height: 44px;
+  }
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -122,10 +137,18 @@ button {
 
   .main-content {
     padding: 12px;
-    padding-bottom: 80px; /* Space for bottom nav */
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); /* Space for bottom nav + notch */
   }
 
   .hide-mobile {
     display: none !important;
+  }
+}
+
+/* Reduced motion: respect user preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

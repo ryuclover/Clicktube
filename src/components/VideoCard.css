@@ -131,3 +131,29 @@
     width: 100%;
   }
 }
+
+/* Small phones: compact 2-col cards — smaller avatar, tighter text */
+@media (max-width: 640px) and (min-width: 481px) {
+  .video-card {
+    gap: 8px;
+  }
+  .thumbnail-container {
+    border-radius: 10px;
+  }
+  .channel-avatar {
+    width: 28px;
+    height: 28px;
+  }
+  .video-title {
+    font-size: 0.82rem;
+    -webkit-line-clamp: 2;
+  }
+  .channel-name,
+  .video-meta {
+    font-size: 0.72rem;
+  }
+  .duration {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+  }
+}

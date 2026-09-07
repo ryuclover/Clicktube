@@ -1,13 +1,39 @@
-/* App.css will be used for component specific styles if needed, but we keep it minimal */
+/* App.css — fluid responsive grid system */
 .video-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: clamp(12px, 2vw, 24px);
   padding: 20px 0;
 }
 
-@media (max-width: 640px) {
+/* Ultrawide: cap columns so cards don't stretch */
+@media (min-width: 1800px) {
+  .video-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    max-width: 2000px;
+    margin: 0 auto;
+  }
+}
+
+/* Tablet: 2 columns */
+@media (max-width: 1024px) and (min-width: 641px) {
+  .video-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+    gap: 16px;
+  }
+}
+
+/* Mobile: 2 compact columns for small phones feel cramped — use 1 col under 480px, 2 cols 481-640 */
+@media (max-width: 640px) and (min-width: 481px) {
+  .video-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
   .video-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
