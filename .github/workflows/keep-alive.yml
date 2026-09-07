@@ -1,0 +1,19 @@
+name: keep-alive
+
+on:
+  schedule:
+    # Every 6 hours — touches /api/ping so Atlas M0 doesn't auto-pause
+    # and Render free tier doesn't sleep too long.
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend (wake Atlas + Render)
+        run: |
+          echo "Pinging https://clicktube-api.onrender.com/api/ping ..."
+          curl -fsS --max-time 90 https://clicktube-api.onrender.com/api/ping || echo "ping failed (cold start?)"
+          echo "Pinging frontend ..."
+          curl -fsS --max-time 60 -o /dev/null https://clicktubeapp.vercel.app/ || echo "frontend ping failed"

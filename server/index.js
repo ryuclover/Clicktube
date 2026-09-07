@@ -78,8 +78,29 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Initialize MongoDB Connection
+// Lightweight keep-alive ping: touches the DB (prevents Atlas M0
+// auto-pause from inactivity) and triggers a reconnect if down.
+// Safe to be hit by an external cron every few hours.
+app.get('/api/ping', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      await require('./config/db')(2);
+    }
+    if (mongoose.connection.readyState === 1) {
+      const count = await require('./models/Video').countDocuments().maxTimeMS(8000);
+      return res.json({ status: 'ok', db: 'connected', videos: count, time: new Date().toISOString() });
+    }
+    const db = require('./config/db').getDbStatus();
+    return res.status(503).json({ status: 'degraded', db: 'disconnected', dbDetail: db, time: new Date().toISOString() });
+  } catch (error) {
+    return res.status(503).json({ status: 'degraded', message: error.message, time: new Date().toISOString() });
+  }
+});
+
+// Initialize MongoDB Connection + self-healing keep-alive
 connectDB();
+require('./config/db').startKeepAlive();
 
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
