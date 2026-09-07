@@ -73,9 +73,10 @@ const NotificationList = ({ userId, onClose }) => {
                 Load more
               </button>
             )}
-          </> : (
-            <p className="empty-notif">No notifications</p>
-          )}
+          </>
+        ) : (
+          <p className="empty-notif">No notifications</p>
+        )}
       </div>
     </div>
   )
