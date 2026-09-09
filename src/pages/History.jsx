@@ -4,6 +4,7 @@ import config from '../config'
 import { AuthContext } from '../context/AuthContext'
 import VideoCard from '../components/VideoCard'
 import SkeletonCard from '../components/SkeletonCard'
+import { Link } from 'react-router-dom'
 import { Clock } from 'lucide-react'
 import './History.css'
 
@@ -38,7 +39,18 @@ const History = () => {
     if (!loading && hasMore) setPage(p => p + 1)
   }
 
-  if (!user) return <div className="auth-message">Please login to view your history.</div>
+  if (!user) {
+    return (
+      <div className="history-page fade-in">
+        <div className="auth-message">
+          <Clock size={48} color="var(--text-secondary)" />
+          <h2>Keep track of what you watch</h2>
+          <p>Watch history isn't viewable when signed out.</p>
+          <Link to="/login" className="login-link-btn library-login">Sign In</Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="history-page fade-in">

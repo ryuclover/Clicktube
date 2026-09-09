@@ -62,6 +62,10 @@ function App() {
             <Route path="/search" element={<Navigate to="/" replace />} />
             <Route path="/category/:categoryName" element={<CategoryResults />} />
             <Route path="/channel/:id" element={<ChannelDetail />} />
+            <Route path="/library" element={<Library />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/subscriptions" element={<Subscriptions />} />
+            <Route path="/liked" element={<Liked />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/diagnostics" element={<AdminDiagnostics />} />
@@ -69,11 +73,7 @@ function App() {
             {/* Protected routes */}
             <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-            <Route path="/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
-            <Route path="/liked" element={<ProtectedRoute><Liked /></ProtectedRoute>} />
             <Route path="/playlist/:id" element={<ProtectedRoute><PlaylistDetail /></ProtectedRoute>} />
-            <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
             <Route path="/studio" element={<ProtectedRoute><Studio /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
 

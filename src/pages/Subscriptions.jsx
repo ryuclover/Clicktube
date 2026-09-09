@@ -30,7 +30,18 @@ const Subscriptions = () => {
     }
   }, [user])
 
-  if (!user) return <div className="auth-message">Please login to view your subscriptions.</div>
+  if (!user) {
+    return (
+      <div className="subs-page fade-in">
+        <div className="auth-message">
+          <Users size={48} color="var(--text-secondary)" />
+          <h2>Don't miss new videos</h2>
+          <p>Sign in to see updates from your favorite channels</p>
+          <Link to="/login" className="login-link-btn library-login">Sign In</Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="subs-page fade-in">

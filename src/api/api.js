@@ -26,10 +26,14 @@ api.interceptors.response.use(
     const original = error.config;
     const status = error.response && error.response.status;
     const url = (original && original.url) || '';
-    const isAuthRoute = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/refresh');
+    const isAuthRoute = 
+      url.includes('/auth/login') || 
+      url.includes('/auth/register') || 
+      url.includes('/auth/refresh') || 
+      url.includes('/auth/me') ||
+      url.includes('/auth/logout');
 
-    // P3: silent refresh once on 401 (except auth routes themselves).
-    // New access token arrives via httpOnly cookie — just retry the request.
+    // Silent refresh once on 401 for authenticated session renewal (except auth routes).
     if (status === 401 && !original._retry && !isAuthRoute) {
       original._retry = true;
       try {
@@ -39,17 +43,13 @@ api.interceptors.response.use(
         await refreshing;
         return api(original);
       } catch (refreshErr) {
-        // Refresh failed — clear session and redirect to login
+        // Refresh failed — clear local session state
         sessionStorage.removeItem('user');
         localStorage.removeItem('user');
-        if (window.location.pathname !== '/login') window.location.href = '/login';
         return Promise.reject(refreshErr);
       }
     }
 
-    if (status === 401 && isAuthRoute) {
-      return Promise.reject(error);
-    }
     return Promise.reject(error);
   }
 );

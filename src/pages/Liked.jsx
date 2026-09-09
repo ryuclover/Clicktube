@@ -3,6 +3,7 @@ import api from '../api/api'
 import { AuthContext } from '../context/AuthContext'
 import VideoCard from '../components/VideoCard'
 import SkeletonCard from '../components/SkeletonCard'
+import { Link } from 'react-router-dom'
 import { ThumbsUp } from 'lucide-react'
 import './History.css'
 
@@ -39,7 +40,18 @@ const Liked = () => {
     if (!loading && hasMore) setPage(p => p + 1)
   }
 
-  if (!user) return <div className="auth-message">Please login to view your liked videos.</div>
+  if (!user) {
+    return (
+      <div className="history-page fade-in">
+        <div className="auth-message">
+          <ThumbsUp size={48} color="var(--text-secondary)" />
+          <h2>Keep track of your favorite videos</h2>
+          <p>Sign in to view the videos you've liked.</p>
+          <Link to="/login" className="login-link-btn library-login">Sign In</Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="history-page fade-in">
