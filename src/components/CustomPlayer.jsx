@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, RotateCcw, RotateCw } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, Maximize, Settings, RotateCcw, RotateCw, PictureInPicture2 } from 'lucide-react'
 import './CustomPlayer.css'
 
 const CustomPlayer = ({ src, thumbnail, totalDuration }) => {
@@ -184,6 +184,18 @@ const CustomPlayer = ({ src, thumbnail, totalDuration }) => {
     }
   }
 
+  const togglePictureInPicture = async () => {
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture()
+      } else if (videoRef.current && document.pictureInPictureEnabled) {
+        await videoRef.current.requestPictureInPicture()
+      }
+    } catch (err) {
+      console.error('Picture-in-picture error', err)
+    }
+  }
+
   const skip = (seconds) => {
     videoRef.current.currentTime += seconds
   }
@@ -334,6 +346,17 @@ const CustomPlayer = ({ src, thumbnail, totalDuration }) => {
                 </div>
               )}
             </div>
+            {typeof document !== 'undefined' && document.pictureInPictureEnabled && (
+              <button 
+                type="button"
+                className="control-btn" 
+                onClick={togglePictureInPicture} 
+                title="Picture-in-Picture"
+                aria-label="Picture-in-Picture"
+              >
+                <PictureInPicture2 size={20} />
+              </button>
+            )}
             <button className="control-btn" onClick={toggleFullScreen}>
               <Maximize size={20} />
             </button>
