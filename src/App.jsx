@@ -59,6 +59,7 @@ function App() {
             <Route path="/trending" element={<Trending />} />
             <Route path="/video/:id" element={<VideoDetail />} />
             <Route path="/search/:searchTerm" element={<SearchResults />} />
+            <Route path="/search" element={<Navigate to="/" replace />} />
             <Route path="/category/:categoryName" element={<CategoryResults />} />
             <Route path="/channel/:id" element={<ChannelDetail />} />
             <Route path="/login" element={<Login />} />

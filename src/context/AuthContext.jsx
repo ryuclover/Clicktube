@@ -25,6 +25,27 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem(USER_KEY);
   }, []);
 
+  // Rehydrate user session from httpOnly cookie across tabs or after restart
+  useEffect(() => {
+    let cancelled = false;
+    const rehydrateUser = async () => {
+      try {
+        const api = (await import('../api/api')).default;
+        const res = await api.get('/auth/me');
+        if (!cancelled && res.data && res.data.user) {
+          setUser(res.data.user);
+        }
+      } catch {
+        // Unauthenticated or network error — remain logged out
+      }
+    };
+
+    if (!user) {
+      rehydrateUser();
+    }
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     if (user) {
       sessionStorage.setItem(USER_KEY, JSON.stringify(user));

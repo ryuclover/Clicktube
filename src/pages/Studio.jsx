@@ -20,7 +20,7 @@ const Studio = () => {
       const fetchMyVideos = async () => {
         try {
           const res = await api.get('/videos', {
-            params: { userId: user.id }
+            params: { userId: user.id, withStats: 'true' }
           })
           setVideos(res.data.videos || [])
         } catch (err) {
@@ -88,8 +88,8 @@ const Studio = () => {
                   </td>
                   <td>{formatDateBR(video.createdAt)}</td>
                   <td>{video.viewsCount || 0}</td>
-                  <td>0</td>
-                  <td>{video.likes || 0}</td>
+                  <td>{video.commentCount ?? 0}</td>
+                  <td>{video.likeCount ?? video.likes ?? 0}</td>
                   <td className="actions-cell">
                     <button 
                       className="action-btn-studio" 

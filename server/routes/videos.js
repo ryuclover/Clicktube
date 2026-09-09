@@ -11,6 +11,11 @@ const { getAvatarUrl, formatDateBR } = require('../utils/display');
 
 const router = express.Router();
 
+const escapeRegex = (text) => {
+  if (!text || typeof text !== 'string') return '';
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 const buildRandomThumbnail = (videoUrl, duration) => {
   if (!videoUrl || !videoUrl.includes('/upload/')) {
     return 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=1000';
@@ -66,9 +71,10 @@ router.get('/', optionalAuth, requireDb, async (req, res) => {
     }
 
     if (search) {
+      const escaped = escapeRegex(search.trim());
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { title: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } }
       ];
     }
 
@@ -186,10 +192,11 @@ router.get('/', optionalAuth, requireDb, async (req, res) => {
 router.get('/suggestions', requireDb, async (req, res) => {
   try {
     const { q } = req.query;
-    if (!q) return res.json([]);
+    if (!q || !q.trim()) return res.json([]);
 
+    const escaped = escapeRegex(q.trim());
     const videos = await Video.find({
-      title: { $regex: q, $options: 'i' },
+      title: { $regex: escaped, $options: 'i' },
       status: 'public',
       deletedAt: null
     }).limit(10).select('title');
@@ -284,14 +291,20 @@ router.post(
  * @desc    Get a single video by its ID
  * @access  Public
  */
-router.get('/:id', requireDb, async (req, res) => {
+router.get('/:id', optionalAuth, requireDb, async (req, res) => {
   try {
     const { id } = req.params;
 
     const video = await Video.findOne({ id, deletedAt: null }).lean();
     if (!video) return res.status(404).json({ code: 'NOT_FOUND', message: 'Video not found' });
 
-    const uploader = await User.findOne({ id: video.uploaderId });
+    const [uploader, likeCount, dislikeCount, userReactionDoc] = await Promise.all([
+      User.findOne({ id: video.uploaderId }).lean(),
+      Like.countDocuments({ videoId: id, type: 'like' }),
+      Like.countDocuments({ videoId: id, type: 'dislike' }),
+      req.user ? Like.findOne({ videoId: id, userId: req.user.id }).lean() : null,
+    ]);
+
     const enriched = {
       ...video,
       userId: video.uploaderId,
@@ -300,6 +313,11 @@ router.get('/:id', requireDb, async (req, res) => {
       viewsCount: video.views,
       views: `${video.views} views`,
       timestamp: formatDateBR(video.createdAt),
+      likeCount,
+      likesCount: likeCount,
+      likes: likeCount,
+      dislikeCount,
+      userReaction: userReactionDoc ? userReactionDoc.type : null,
     };
 
     res.json(enriched);
@@ -388,18 +406,25 @@ router.delete('/:id', requireAuth, requireDb, async (req, res) => {
  * BUG #6 FIX: userId now extracted from verified JWT (req.user.id),
  * not from an untrusted request body.
  */
-router.put('/:id', requireAuth, requireDb, uploadCloud.single('thumbnail'), async (req, res) => {
+const checkVideoOwner = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, category, status } = req.body;
-    const requesterId = req.user.id;
-
     const video = await Video.findOne({ id, deletedAt: null });
     if (!video) return res.status(404).json({ code: 'NOT_FOUND', message: 'Video not found' });
-
-    if (video.uploaderId !== requesterId) {
+    if (video.uploaderId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ code: 'FORBIDDEN', message: 'Unauthorized' });
     }
+    req.targetVideo = video;
+    next();
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+router.put('/:id', requireAuth, requireDb, checkVideoOwner, uploadCloud.single('thumbnail'), async (req, res) => {
+  try {
+    const { title, description, category, status } = req.body;
+    const video = req.targetVideo;
 
     if (title) video.title = title;
     if (description !== undefined) video.description = description;

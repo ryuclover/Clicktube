@@ -26,8 +26,14 @@ const setAuthCookies = (res, { id, role }) => {
 };
 
 const clearAuthCookies = (res) => {
-  res.clearCookie('ct_access', { path: '/' });
-  res.clearCookie('ct_refresh', { path: '/' });
+  const opts = {
+    httpOnly: true,
+    secure: isProd(),
+    sameSite: isProd() ? 'none' : 'lax',
+    path: '/',
+  };
+  res.clearCookie('ct_access', opts);
+  res.clearCookie('ct_refresh', opts);
 };
 
 module.exports = { signAccess, signRefresh, setAuthCookies, clearAuthCookies, ACCESS_TTL, REFRESH_TTL };

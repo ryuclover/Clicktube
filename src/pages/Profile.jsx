@@ -22,7 +22,6 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       const fetchProfile = async () => {
-        if (config.mode === 'mock') return
         try {
           const res = await api.get(`/social/profile/${user.id}`)
           setProfile(res.data)

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import api from '../api/api'
 import config from '../config'
+import { AuthContext } from '../context/AuthContext'
 import './Diagnostics.css'
 
 const Diagnostics = () => {
+  const { user } = useContext(AuthContext)
   const [apiStatus, setApiStatus] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [testResult, setTestResult] = useState(null)
@@ -83,7 +85,7 @@ const Diagnostics = () => {
         <h2>Environment Info</h2>
         <p><strong>VITE_API_URL:</strong> {config.apiUrl}</p>
         <p><strong>Frontend URL:</strong> {window.location.origin}</p>
-        <p><strong>Token (from storage):</strong> {sessionStorage.getItem('token') ? '✓ Present' : '✗ Missing'}</p>
+        <p><strong>Auth Session:</strong> {user ? `✓ Logged in as ${user.username} (${user.role})` : '✗ Not logged in (httpOnly cookie required for uploads)'}</p>
       </div>
 
       <div style={{ marginTop: '20px', padding: '10px', border: '1px solid #00ff00', borderRadius: '5px' }}>
@@ -103,7 +105,7 @@ const Diagnostics = () => {
         <h2>Upload Test</h2>
         <button
           onClick={handleTestUpload}
-          disabled={uploading || !sessionStorage.getItem('token')}
+          disabled={uploading || !user}
           style={{
             padding: '10px 20px',
             backgroundColor: '#00ff00',

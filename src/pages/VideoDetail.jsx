@@ -43,6 +43,16 @@ const VideoDetail = () => {
         const res = await api.get(`/videos/${id}`)
         if (cancelled) return
         setVideo(res.data)
+        if (res.data.userReaction === 'like') {
+          setLiked(true)
+          setDisliked(false)
+        } else if (res.data.userReaction === 'dislike') {
+          setDisliked(true)
+          setLiked(false)
+        } else {
+          setLiked(false)
+          setDisliked(false)
+        }
 
         const [profileRes, relatedRes, commentsRes] = await Promise.allSettled([
           api.get(`/social/profile/${res.data.userId}`),
@@ -103,15 +113,28 @@ const VideoDetail = () => {
   const handleLike = async (type) => {
     if (!user) return toast.error('Please login to like')
     try {
-      await api.post('/social/like', { videoId: id, type })
+      const res = await api.post('/social/like', { videoId: id, type })
+      const action = res.data.action
       if (type === 'like') {
-        setLiked(!liked)
+        const isNowLiked = action === 'added'
+        setLiked(isNowLiked)
         setDisliked(false)
-        toast.success(liked ? 'Like removed' : 'Video liked')
+        setVideo(prev => prev ? {
+          ...prev,
+          likeCount: Math.max(0, (prev.likeCount ?? prev.likes ?? 0) + (isNowLiked ? 1 : -1))
+        } : prev)
+        toast.success(isNowLiked ? 'Video liked' : 'Like removed')
       } else {
-        setDisliked(!disliked)
-        setLiked(false)
-        toast.success(disliked ? 'Dislike removed' : 'Video disliked')
+        const isNowDisliked = action === 'added'
+        setDisliked(isNowDisliked)
+        if (liked) {
+          setLiked(false)
+          setVideo(prev => prev ? {
+            ...prev,
+            likeCount: Math.max(0, (prev.likeCount ?? prev.likes ?? 0) - 1)
+          } : prev)
+        }
+        toast.success(isNowDisliked ? 'Video disliked' : 'Dislike removed')
       }
     } catch (err) {
       toast.error('Action failed')
@@ -279,25 +302,43 @@ const VideoDetail = () => {
                 <button 
                   className={`action-btn like ${liked ? 'active' : ''}`} 
                   onClick={() => handleLike('like')}
+                  title="Like"
+                  aria-label="Like video"
                 >
-                  <ThumbsUp size={18} fill={liked ? 'currentColor' : 'none'} /> {video.likes + (liked ? 1 : 0)}
+                  <ThumbsUp size={18} fill={liked ? 'currentColor' : 'none'} /> {video.likeCount ?? video.likesCount ?? video.likes ?? 0}
                 </button>
                 <div className="btn-divider"></div>
                 <button 
-                  className={`action-btn dislike ${disliked ? 'active' : ''}`}
+                  className={`action-btn dislike ${disliked ? 'active' : ''}`} 
                   onClick={() => handleLike('dislike')}
+                  title="Dislike"
+                  aria-label="Dislike video"
                 >
                   <ThumbsDown size={18} fill={disliked ? 'currentColor' : 'none'} />
                 </button>
               </div>
-              <button className="action-btn"><Share2 size={18} /> Share</button>
+              <button className="action-btn" onClick={handleCopyLink} title="Share link">
+                <Share2 size={18} /> Share
+              </button>
               <button 
                 className="action-btn" 
                 onClick={() => user ? setShowPlaylistModal(true) : toast.error('Please login to save videos')}
               >
                 <FolderPlus size={18} /> Save
               </button>
-              <button className="action-btn hide-tablet"><Download size={18} /> Download</button>
+              <button 
+                className="action-btn hide-tablet" 
+                title="Open or download video"
+                onClick={() => {
+                  if (videoUrl) {
+                    window.open(videoUrl, '_blank')
+                  } else {
+                    toast.error('Video URL not available')
+                  }
+                }}
+              >
+                <Download size={18} /> Download
+              </button>
               <div className="more-actions-wrapper" ref={menuRef}>
                 <button
                   type="button"

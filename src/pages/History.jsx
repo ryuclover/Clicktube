@@ -3,6 +3,7 @@ import api from '../api/api'
 import config from '../config'
 import { AuthContext } from '../context/AuthContext'
 import VideoCard from '../components/VideoCard'
+import SkeletonCard from '../components/SkeletonCard'
 import { Clock } from 'lucide-react'
 import './History.css'
 
@@ -17,7 +18,6 @@ const History = () => {
   useEffect(() => {
     if (user) {
       const fetchHistory = async () => {
-        if (config.mode === 'mock') return
         try {
           const res = await api.get(`/social/history/${user.id}`, { params: { page, limit: 20 } })
           const data = res.data.videos || res.data

@@ -6,11 +6,17 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const uploadAvatar = require('../middleware/uploadAvatar');
 const { requireAuth } = require('../middleware/auth');
+const { requireDb } = require('../middleware/requireDb');
 const { setAuthCookies, clearAuthCookies } = require('../config/tokens');
 const { getAvatarUrl, DEFAULT_AVATAR } = require('../utils/display');
 const env = require('../config/env');
 
 const router = express.Router();
+
+const escapeRegex = (text) => {
+  if (!text || typeof text !== 'string') return '';
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -29,7 +35,7 @@ const validate = (req, res, next) => {
  * @body    {string} email - User email address
  * @body    {string} password - Minimum 6 characters
  */
-router.post('/register', [
+router.post('/register', requireDb, [
   body('username').trim().notEmpty().withMessage('Username is required'),
   body('email').isEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
@@ -69,7 +75,7 @@ router.post('/register', [
  * @body    {string} email - User email address
  * @body    {string} password - User password
  */
-router.post('/login', [
+router.post('/login', requireDb, [
   body('email').isEmail().withMessage('Please provide a valid email'),
   body('password').notEmpty().withMessage('Password is required'),
   validate
@@ -121,19 +127,46 @@ router.post('/logout', (req, res) => {
 });
 
 /**
+ * @route   GET /api/auth/me
+ * @desc    Get current authenticated user profile
+ * @access  Private
+ */
+router.get('/me', requireAuth, requireDb, async (req, res) => {
+  try {
+    const user = await User.findOne({ id: req.user.id }).lean();
+    if (!user) return res.status(404).json({ code: 'NOT_FOUND', message: 'User not found' });
+
+    res.json({
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatar: getAvatarUrl(user),
+        profilePicture: user.profilePicture || getAvatarUrl(user),
+        role: user.role,
+        bio: user.bio || '',
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+/**
  * @route   GET /api/auth/search
  * @desc    Search for channels (users)
  * @access  Public
  * @query   {string} q - The partial username to search for
  */
-router.get('/search', async (req, res) => {
+router.get('/search', requireDb, async (req, res) => {
   try {
     const { q } = req.query;
-    if (!q) return res.json([]);
+    if (!q || !q.trim()) return res.json([]);
 
+    const escaped = escapeRegex(q.trim());
     const users = await User.find({
-      username: { $regex: q, $options: 'i' }
-    }).select('id username avatar profilePicture bio subscribers -_id').lean();
+      username: { $regex: escaped, $options: 'i' }
+    }).select('id username avatar profilePicture bio subscribers -_id').limit(20).lean();
 
     res.json(users.map((channel) => ({
       ...channel,
@@ -152,7 +185,7 @@ router.get('/search', async (req, res) => {
  * @body    {file} profilePicture - Image file
  * @body    {string} userId - User ID
  */
-router.post('/upload-avatar', requireAuth, uploadAvatar.single('profilePicture'), async (req, res) => {
+router.post('/upload-avatar', requireAuth, requireDb, uploadAvatar.single('profilePicture'), async (req, res) => {
   try {
     const userId = req.user.id;
 

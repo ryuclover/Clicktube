@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../api/api'
 import { AuthContext } from '../context/AuthContext'
@@ -12,6 +12,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false)
   const { login } = useContext(AuthContext)
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = location.state?.from?.pathname || '/'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -22,7 +24,7 @@ const Login = () => {
       const res = await api.post('/auth/login', { email, password })
       login(res.data.user)
       toast.success(`Welcome back, ${res.data.user.username}!`, { id: loadingToast })
-      navigate('/')
+      navigate(from, { replace: true })
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed', { id: loadingToast })
     } finally {

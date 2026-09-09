@@ -9,19 +9,24 @@ import './Subscriptions.css'
 const Subscriptions = () => {
   const { user } = useContext(AuthContext)
   const [channels, setChannels] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (user) {
       const fetchSubs = async () => {
-        if (config.mode === 'mock') return
+        setLoading(true)
         try {
           const res = await api.get(`/social/subscriptions/${user.id}`)
           setChannels(res.data)
         } catch (err) {
           console.error(err)
+        } finally {
+          setLoading(false)
         }
       }
       fetchSubs()
+    } else {
+      setLoading(false)
     }
   }, [user])
 
@@ -34,7 +39,9 @@ const Subscriptions = () => {
         <h1>Subscriptions</h1>
       </div>
       
-      {channels.length > 0 ? (
+      {loading ? (
+        <div className="loading-state">Loading subscriptions...</div>
+      ) : channels.length > 0 ? (
         <div className="channels-grid">
           {channels.map((channel) => (
             <Link key={channel.id} to={`/channel/${channel.id}`} className="channel-card glass">

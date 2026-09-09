@@ -152,7 +152,7 @@ router.post('/like', requireAuth, requireDb, async (req, res) => {
  * @access  Private
  * @body    {string} channelId - The target channel (user) ID
  */
-router.post('/subscribe', requireAuth, async (req, res) => {
+router.post('/subscribe', requireAuth, requireDb, async (req, res) => {
   try {
     const { channelId } = req.body;
     const userId = req.user.id;

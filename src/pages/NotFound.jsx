@@ -21,9 +21,9 @@ const NotFound = () => {
             <Home size={18} />
             Go Home
           </Link>
-          <Link to="/search" className="not-found-btn secondary">
+          <Link to="/" className="not-found-btn secondary">
             <Search size={18} />
-            Search Videos
+            Browse Videos
           </Link>
         </div>
       </div>

@@ -24,15 +24,38 @@ const Upload = () => {
 
   const getVideoDuration = (file) => {
     return new Promise((resolve) => {
+      let settled = false
       const video = document.createElement('video')
       video.preload = 'metadata'
+
+      const cleanup = () => {
+        try {
+          if (video.src) window.URL.revokeObjectURL(video.src)
+        } catch {}
+      }
+
+      const finish = (value) => {
+        if (settled) return
+        settled = true
+        cleanup()
+        resolve(value)
+      }
+
+      const timer = setTimeout(() => finish('0:00'), 3000)
+
       video.onloadedmetadata = () => {
-        window.URL.revokeObjectURL(video.src)
-        const duration = Math.floor(video.duration)
+        clearTimeout(timer)
+        const duration = Math.floor(video.duration || 0)
         const minutes = Math.floor(duration / 60)
         const seconds = duration % 60
-        resolve(`${minutes}:${seconds.toString().padStart(2, '0')}`)
+        finish(`${minutes}:${seconds.toString().padStart(2, '0')}`)
       }
+
+      video.onerror = () => {
+        clearTimeout(timer)
+        finish('0:00')
+      }
+
       video.src = URL.createObjectURL(file)
     })
   }
